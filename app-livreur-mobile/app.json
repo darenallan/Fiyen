@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "Fiyen Livreur",
+    "slug": "fiyen-livreur",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "fiyenlivreur",
+    "ios": {
+      "supportsTablet": false,
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "location"
+        ],
+        "NSLocationWhenInUseUsageDescription": "Votre position permet à votre compagnie de suivre vos livraisons en cours.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Votre position continue d'être transmise pendant une course, même écran verrouillé."
+      }
+    },
+    "android": {
+      "package": "bf.fiyen.livreur",
+      "adaptiveIcon": {
+        "backgroundColor": "#100F0D",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
+          "locationWhenInUsePermission": "Votre position permet à votre compagnie de suivre vos livraisons en cours.",
+          "locationAlwaysAndWhenInUsePermission": "Votre position continue d'être transmise pendant une course, même écran verrouillé."
+        }
+      ]
+    ],
+    "backgroundColor": "#100F0D"
+  }
+}

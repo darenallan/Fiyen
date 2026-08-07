@@ -1,0 +1,643 @@
+/* ==========================================================================
+   FIYEN DELIVERY — charte
+   Noir mat dominant, or cuivré en accentuation, kraft en rappel du colis.
+   Polices auto-hébergées : sur un réseau mobile instable, dépendre d'un CDN
+   de polices ajoute un aller-retour qui retarde le premier rendu.
+   ========================================================================== */
+
+@font-face {
+  font-family: 'Oswald';
+  /* Police variable : un seul fichier couvre toutes les graisses. */
+  src: url('./polices/oswald-variable.woff2') format('woff2-variations');
+  font-weight: 200 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Montserrat';
+  src: url('./polices/montserrat-variable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* --- Couleurs de marque (invariantes) --- */
+  --or: #c5a059;
+  --kraft: #d2b48c;
+  --blanc-casse: #f5f5f5;
+
+  /* Déclinaisons de l'or pour le rendu métallique : le laiton ne se lit comme
+     un métal que s'il a un clair et un sombre, jamais en aplat uniforme.
+     L'extrémité sombre est bornée à #B08E4C : plus bas, le bas des lettres et
+     le texte des boutons repassaient sous le seuil de contraste de 4,5:1. */
+  --or-clair: #e3c68a;
+  --or-sombre: #b08e4c;
+  /* Réservé aux surfaces sans texte (ombres, arêtes). */
+  --or-profond: #8a6f3a;
+
+  /* --- Échelle de neutres CHAUDS ---
+     Point clé : un gris froid fait paraître l'or terne et sale. Toutes les
+     palettes de luxe reposent sur des neutres chauds (famille « stone »).
+     Le noir de marque #1A1A1A sert de matière aux cartes ; le fond de page
+     descend en dessous pour que l'élévation se voie. */
+  --fond: #100f0d;
+  --surface: #1c1a16;
+  --surface-haute: #2b2721;
+  --bordure: #403930;
+
+  /* --- Rôles sémantiques --- */
+  --texte: var(--blanc-casse);
+  --texte-attenue: #b5ac9b;
+  --accent: var(--or);
+  --accent-contraste: #17150f;
+  --succes: #7cc98b;
+  --danger: #e88b8b;
+
+  /* Sur fond sombre, la séparation des surfaces ne vient pas du contraste de
+     luminance (que la formule WCAG écrase) mais de l'ombre portée et d'un
+     liseré supérieur clair, comme une arête qui capte la lumière. */
+  --ombre-carte: 0 2px 6px rgba(0, 0, 0, 0.45), 0 12px 32px rgba(0, 0, 0, 0.35);
+  --liseré-haut: inset 0 1px 0 rgba(245, 245, 245, 0.055);
+
+  /* --- Rythme --- */
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 22px;
+
+  /* Courbe Expo.out : départ franc, arrivée douce — donne le sentiment
+     de réactivité sans brusquerie. */
+  --courbe: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --titre: 'Oswald', 'Impact', system-ui, sans-serif;
+  --corps: 'Montserrat', system-ui, 'Segoe UI', Roboto, sans-serif;
+
+  font-family: var(--corps);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--texte);
+  background: var(--fond);
+  -webkit-font-smoothing: antialiased;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  background: var(--fond);
+  /* Halo cuivré très diffus : donne de la profondeur sans surcharger. */
+  background-image: radial-gradient(
+    ellipse 100% 50% at 50% -8%,
+    rgba(197, 160, 89, 0.11),
+    transparent 68%
+  );
+  background-attachment: fixed;
+  min-height: 100vh;
+  overscroll-behavior-y: contain;
+}
+
+/* --------------------------------- Titres -------------------------------- */
+
+h1,
+h2,
+h3 {
+  font-family: var(--titre);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  margin: 0;
+  color: var(--texte);
+}
+
+h1 {
+  font-size: 26px;
+  line-height: 1.15;
+}
+h2 {
+  font-size: 17px;
+  letter-spacing: 0.1em;
+  color: var(--texte-attenue);
+}
+h3 {
+  font-size: 15px;
+}
+
+p {
+  margin: 0;
+}
+
+/* -------------------------------- Marque --------------------------------- */
+
+.marque {
+  font-family: var(--titre);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 24px;
+  line-height: 1;
+  /* Laiton brossé : le dégradé est peint dans les lettres elles-mêmes.
+     Reflet resserré en haut, le reste reste dans l'or pleinement lisible. */
+  background: linear-gradient(176deg, var(--or-clair) 0%, var(--or) 55%, var(--or-sombre) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.marque-sous {
+  font-family: var(--corps);
+  font-size: 10px;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--texte-attenue);
+  margin-top: 6px;
+}
+
+/* -------------------------------- Surfaces -------------------------------- */
+
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+  min-height: 100vh;
+}
+
+.carte {
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: var(--r-lg);
+  padding: 22px;
+  margin-bottom: 16px;
+  box-shadow: var(--ombre-carte), var(--liseré-haut);
+}
+
+/* Carte mise en avant : scellé cuivré en haut, comme sur un colis. */
+.carte-vedette {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(158deg, var(--surface-haute) 0%, var(--surface) 62%);
+}
+
+.carte-vedette::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--or), transparent);
+}
+
+/* Halo cuivré rasant : donne du volume au coin supérieur de la carte vedette. */
+.carte-vedette::after {
+  content: '';
+  position: absolute;
+  top: -55%;
+  right: -25%;
+  width: 75%;
+  height: 150%;
+  background: radial-gradient(ellipse at center, rgba(197, 160, 89, 0.1), transparent 65%);
+  pointer-events: none;
+}
+
+/* --------------------------------- Champs -------------------------------- */
+
+label {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texte-attenue);
+  margin-bottom: 8px;
+}
+
+input {
+  font: inherit;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--bordure);
+  border-radius: var(--r-sm);
+  /* Champ en creux : plus sombre que la carte, comme une gravure. */
+  background: var(--fond);
+  color: var(--texte);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35);
+  transition: border-color 180ms var(--courbe), box-shadow 180ms var(--courbe);
+}
+
+input::placeholder {
+  color: #6d675f;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--or);
+  box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.18);
+}
+
+/* -------------------------------- Boutons -------------------------------- */
+
+button {
+  font-family: var(--titre);
+  font-size: 15px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  width: 100%;
+  /* 52px : cible tactile confortable, au-delà du minimum de 44px */
+  min-height: 52px;
+  padding: 14px 20px;
+  border: none;
+  border-radius: var(--r-sm);
+  /* Dégradé du clair vers le sombre : c'est ce reflet qui fait lire le laiton
+     comme un métal plutôt que comme un aplat jaune. */
+  background: linear-gradient(145deg, var(--or-clair) 0%, var(--or) 46%, var(--or-sombre) 100%);
+  color: var(--accent-contraste);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 2px 10px rgba(0, 0, 0, 0.4);
+  transition: transform 180ms var(--courbe), filter 180ms var(--courbe),
+    box-shadow 180ms var(--courbe);
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32), 0 6px 22px rgba(197, 160, 89, 0.28);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.975);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--or-clair);
+  outline-offset: 3px;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+button.contour {
+  background: none;
+  border: 1px solid var(--bordure);
+  color: var(--texte);
+  box-shadow: none;
+}
+
+button.contour:hover:not(:disabled) {
+  border-color: var(--or);
+  color: var(--or);
+  background: rgba(197, 160, 89, 0.07);
+  filter: none;
+  box-shadow: none;
+}
+
+button.discret {
+  width: auto;
+  min-height: 40px;
+  padding: 8px 16px;
+  font-size: 12px;
+}
+
+/* --------------------------------- Badges -------------------------------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-family: var(--titre);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: rgba(197, 160, 89, 0.12);
+  color: var(--or);
+  border: 1px solid rgba(197, 160, 89, 0.3);
+}
+
+.badge.neutre {
+  background: rgba(154, 148, 140, 0.1);
+  color: var(--texte-attenue);
+  border-color: var(--bordure);
+}
+
+.badge.succes {
+  background: rgba(107, 191, 123, 0.12);
+  color: var(--succes);
+  border-color: rgba(107, 191, 123, 0.3);
+}
+
+.pastille {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Pulsation discrète pour signaler un flux réellement vivant. */
+.pastille.vivante {
+  animation: pulsation 2s var(--courbe) infinite;
+}
+
+@keyframes pulsation {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+/* ------------------------------ Suivi (étapes) ---------------------------- */
+
+.etapes {
+  display: flex;
+  flex-direction: column;
+  margin-top: 4px;
+}
+
+.etape-ligne {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.etape-piste {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.etape-point {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid var(--bordure);
+  background: var(--surface);
+  flex-shrink: 0;
+  margin-top: 4px;
+  transition: background 300ms var(--courbe), border-color 300ms var(--courbe);
+}
+
+.etape-ligne.faite .etape-point {
+  background: linear-gradient(145deg, var(--or-clair), var(--or-sombre));
+  border-color: var(--or);
+}
+
+.etape-ligne.courante .etape-point {
+  border-color: var(--or);
+  background: var(--surface);
+  box-shadow: 0 0 0 4px rgba(197, 160, 89, 0.16);
+}
+
+.etape-barre {
+  width: 2px;
+  flex: 1;
+  min-height: 24px;
+  background: var(--bordure);
+  margin: 4px 0;
+  transition: background 300ms var(--courbe);
+}
+
+.etape-ligne.faite .etape-barre {
+  background: var(--or);
+}
+
+.etape-libelle {
+  font-family: var(--titre);
+  font-size: 13px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--texte-attenue);
+  padding-bottom: 20px;
+  transition: color 300ms var(--courbe);
+}
+
+.etape-ligne.faite .etape-libelle {
+  color: var(--texte);
+}
+
+.etape-ligne.courante .etape-libelle {
+  color: var(--or);
+}
+
+.etape-ligne:last-child .etape-libelle {
+  padding-bottom: 0;
+}
+
+/* --------------------------------- Trajet -------------------------------- */
+
+.trajet {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.trajet-point {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.trajet-marque {
+  font-family: var(--titre);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--accent-contraste);
+  background: linear-gradient(145deg, #e2c9a6, var(--kraft));
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.trajet-adresse {
+  font-size: 15px;
+  color: var(--texte);
+  padding-top: 3px;
+}
+
+/* ---------------------------------- Carte --------------------------------- */
+
+.carte-suivi {
+  height: 320px;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  border: 1px solid var(--bordure);
+}
+
+/* Sélecteur composé (les deux classes portent sur le même élément) et non
+   descendant : leaflet.css est importé depuis un composant, donc après cette
+   feuille, et gagnerait à spécificité égale. Sans cela, un aplat gris clair
+   apparaît le temps du chargement des tuiles. */
+.carte-suivi.leaflet-container {
+  background: var(--fond);
+  font-family: var(--corps);
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--surface-haute);
+  color: var(--texte);
+}
+
+.leaflet-control-attribution {
+  background: rgba(26, 26, 26, 0.82) !important;
+  color: var(--texte-attenue) !important;
+  font-size: 10px !important;
+}
+
+.leaflet-control-attribution a {
+  color: var(--texte-attenue) !important;
+}
+
+.leaflet-control-zoom a {
+  background: var(--surface-haute) !important;
+  color: var(--texte) !important;
+  border-color: var(--bordure) !important;
+}
+
+/* Marqueur du livreur : pastille cuivrée et halo pulsant, pour rester
+   repérable sur une carte sombre. */
+.halo-livreur {
+  display: block;
+  width: 14px;
+  height: 14px;
+  margin: 3px;
+  border-radius: 50%;
+  background: var(--or);
+  border: 2px solid var(--fond);
+  box-shadow: 0 0 0 0 rgba(197, 160, 89, 0.55);
+  animation: halo 2.2s var(--courbe) infinite;
+}
+
+@keyframes halo {
+  0% {
+    box-shadow: 0 0 0 0 rgba(197, 160, 89, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 16px rgba(197, 160, 89, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(197, 160, 89, 0);
+  }
+}
+
+/* -------------------------------- Messages -------------------------------- */
+
+.fil-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 4px 2px;
+}
+
+.bulle {
+  max-width: 82%;
+  padding: 11px 15px;
+  font-size: 15px;
+  line-height: 1.45;
+  border-radius: var(--r-md);
+  word-break: break-word;
+  animation: entree-bulle 300ms var(--courbe);
+}
+
+.bulle.moi {
+  align-self: flex-end;
+  background: linear-gradient(150deg, var(--or-clair) 0%, var(--or) 55%, var(--or-sombre) 100%);
+  color: var(--accent-contraste);
+  border-bottom-right-radius: 5px;
+  font-weight: 500;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.bulle.lui {
+  align-self: flex-start;
+  background: var(--surface-haute);
+  box-shadow: var(--liseré-haut);
+  color: var(--texte);
+  border: 1px solid var(--bordure);
+  border-bottom-left-radius: 5px;
+}
+
+@keyframes entree-bulle {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.zone-saisie {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.zone-saisie button {
+  width: auto;
+  padding: 0 22px;
+  flex-shrink: 0;
+}
+
+/* -------------------------------- Divers --------------------------------- */
+
+.attenue {
+  color: var(--texte-attenue);
+  font-size: 14px;
+}
+
+.erreur {
+  color: var(--danger);
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+.entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.apparition {
+  animation: apparition 420ms var(--courbe) both;
+}
+
+@keyframes apparition {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* L'animation ne porte jamais d'information seule : la couper n'enlève rien. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
