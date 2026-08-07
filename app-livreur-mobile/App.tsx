@@ -36,7 +36,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={{ flex: 1, backgroundColor: couleurs.fond }}>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         {connecte === null ? null : connecte ? (
           <EcranLivreur onDeconnexion={deconnecter} />
         ) : (

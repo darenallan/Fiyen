@@ -10,9 +10,9 @@ const ZOOM_DEFAUT = 12;
 /* Le statut reste porté par la couleur ET par l'opacité : un livreur hors ligne
    est grisé et estompé, donc distinguable même sans percevoir la teinte. */
 const COULEURS: Record<string, string> = {
-  dispo: '#7cc98b',
-  en_course: '#c5a059',
-  offline: '#6d675f',
+  dispo: '#12805a',
+  en_course: '#c4451a',
+  offline: '#9c948c',
 };
 
 /**
@@ -28,7 +28,7 @@ function iconeLivreur(livreur: Livreur): L.DivIcon {
     html: `<span style="
       display:block;width:16px;height:16px;border-radius:50%;
       background:${couleur};opacity:${opacite};
-      border:2.5px solid #100f0d;box-shadow:0 0 0 1px rgba(255,255,255,.22);
+      border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);
     "></span>`,
     iconSize: [16, 16],
     iconAnchor: [8, 8],
@@ -71,9 +71,9 @@ export function CarteFlotte({ livreurs }: { livreurs: Livreur[] }) {
       zoomControl: true,
     });
 
-    // Tuiles sombres : les tuiles OSM standard, très claires, jureraient avec
-    // le noir mat de la charte et écraseraient les marqueurs cuivrés.
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    // Tuiles claires et désaturées : elles laissent les marqueurs de statut
+    // ressortir, là où les routes colorées d'OSM entreraient en concurrence.
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap, &copy; CARTO',
     }).addTo(carte);

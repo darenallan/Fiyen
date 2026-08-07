@@ -3,6 +3,8 @@ import { api, ApiError, type Course, type Livreur, type StatutCourse } from './a
 import { TrackingLivreur, type EtatTracking } from './tracking';
 import { ChatMasque } from './ChatMasque';
 import { Marque } from './Marque';
+import { NavBas, type Onglet } from './composants/NavBas';
+import { IconeAlerte, IconeVerrou } from './composants/Icones';
 
 /**
  * Rafraîchissement des courses. Volontairement lent : sur un forfait data
@@ -42,6 +44,7 @@ export function EcranLivreur({ onDeconnexion }: { onDeconnexion: () => void }) {
   const [actionEnCours, setActionEnCours] = useState(false);
   const [etatTracking, setEtatTracking] = useState<EtatTracking>(ETAT_TRACKING_INITIAL);
   const [courseEnDiscussion, setCourseEnDiscussion] = useState<string | null>(null);
+  const [onglet, setOnglet] = useState<Onglet>('service');
 
   const trackingRef = useRef<TrackingLivreur | null>(null);
   if (trackingRef.current === null) {
@@ -122,17 +125,27 @@ export function EcranLivreur({ onDeconnexion }: { onDeconnexion: () => void }) {
     );
   }
 
+  const courseAAgir = courses.filter((c) => ETAPE_SUIVANTE[c.statut] !== undefined).length;
+
   return (
+    <>
     <div className="app">
       <div className="entete">
         <Marque />
-        <button className="contour discret" onClick={deconnecter}>
-          Quitter
-        </button>
+        <span className="muet">{courses.length > 0 ? `${courses.length} course${courses.length > 1 ? 's' : ''}` : ''}</span>
       </div>
 
+      {erreur && (
+        <div className="bandeau-erreur" role="status">
+          <IconeAlerte className="icone-inline" />
+          <span>{erreur}</span>
+        </div>
+      )}
+
+      {onglet === 'service' && (<>
+
       <div className="carte carte-vedette apparition">
-        <span className={`badge ${livreur.statut}`}>
+        <span className={`badge ${livreur.statut === 'offline' ? '' : livreur.statut === 'dispo' ? 'succes' : 'actif'}`}>
           <span className={`pastille ${livreur.statut === 'en_course' ? 'vivante' : ''}`} />
           {livreur.statut === 'offline'
             ? 'Hors service'
@@ -163,7 +176,7 @@ export function EcranLivreur({ onDeconnexion }: { onDeconnexion: () => void }) {
           <h2>Position GPS</h2>
           <div className="ligne-etat">
             <span className="attenue">Envoi au serveur</span>
-            <span className={`badge ${etatTracking.connecte ? 'dispo' : 'offline'}`}>
+            <span className={`badge ${etatTracking.connecte ? 'succes' : 'erreur'}`}>
               <span className="pastille" />
               {etatTracking.connecte ? 'Connecté' : 'Hors ligne'}
             </span>
@@ -189,6 +202,9 @@ export function EcranLivreur({ onDeconnexion }: { onDeconnexion: () => void }) {
         </div>
       )}
 
+      </>)}
+
+      {onglet === 'courses' && (<>
       {courseEnDiscussion && (
         <ChatMasque courseId={courseEnDiscussion} onFermer={() => setCourseEnDiscussion(null)} />
       )}
@@ -206,7 +222,7 @@ export function EcranLivreur({ onDeconnexion }: { onDeconnexion: () => void }) {
             const suivante = ETAPE_SUIVANTE[course.statut];
             return (
               <div key={course.id} className="course">
-                <span className={`badge ${course.statut}`}>{LIBELLES_STATUT_COURSE[course.statut]}</span>
+                <span className={`badge ${course.statut === 'livree' ? 'succes' : 'actif'}`}>{LIBELLES_STATUT_COURSE[course.statut]}</span>
                 <div className="trajet">
                   <div className="etape">
                     <span className="puce">A</span>
@@ -238,7 +254,31 @@ export function EcranLivreur({ onDeconnexion }: { onDeconnexion: () => void }) {
         )}
       </div>
 
-      {erreur && <p className="erreur">{erreur}</p>}
+      </>)}
+
+      {onglet === 'profil' && (
+        <div className="apparition">
+          <div className="carte">
+            <h2 style={{ marginBottom: 14 }}>Confidentialité</h2>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <span className="jeton-info" aria-hidden="true"><IconeVerrou /></span>
+              <p className="attenue" style={{ margin: 0 }}>
+                Votre numéro n'est jamais communiqué au client, et le sien ne vous est
+                jamais communiqué. Vous échangez uniquement via la messagerie, qui se
+                ferme à la fin de la course.
+              </p>
+            </div>
+          </div>
+
+          <div className="carte">
+            <h2 style={{ marginBottom: 14 }}>Session</h2>
+            <button className="contour" onClick={deconnecter}>Se déconnecter</button>
+          </div>
+        </div>
+      )}
     </div>
+
+    <NavBas actif={onglet} onChange={setOnglet} coursesEnAttente={courseAAgir} />
+    </>
   );
 }

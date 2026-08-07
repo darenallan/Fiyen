@@ -17,11 +17,22 @@ Le backend doit tourner (`../backend`), et son `CORS_ORIGINS` doit inclure
 
 ## Écrans
 
-Application mono-écran : le client se connecte (ou crée son compte), puis voit sa
-livraison en cours — trajet, statut, carte de suivi et conversation.
+Navigation basse à trois onglets, correspondant à ce que le produit fait
+réellement : le client ne commande pas dans un catalogue (c'est sa compagnie de
+livraison qui crée la course), donc ni « Explorer » ni « Panier ».
 
-Le MVP suppose **une course active à la fois** : la plus récente est affichée.
-Les courses sont créées par la compagnie, pas par le client.
+| Onglet | Contenu |
+| --- | --- |
+| Suivi | Livraison en cours : statut, trajet, progression en 5 étapes, carte, conversation |
+| Commandes | Historique de toutes ses courses |
+| Profil | Rappel de la garantie de masquage, déconnexion |
+
+La course **en cours de livraison** prime sur la plus récente : un client qui
+vient de commander ne doit pas perdre de vue la livraison déjà en route.
+
+Chargement : des squelettes reproduisent la forme du contenu à venir, pour que
+la mise en page ne se décale pas à l'arrivée des données — ce qui compte
+d'autant plus que le réseau peut être lent.
 
 ## Ce que le client ne voit jamais
 
@@ -35,52 +46,44 @@ C'est la garantie centrale du produit, et elle se joue autant côté API que cô
 
 ## Identité visuelle
 
-Charte Fiyen Delivery, portée par `src/index.css` sous forme de variables :
+Système de design clair, défini dans `src/index.css` sous forme de jetons. Cette
+feuille **fait référence** : `app-livreur`, `dashboard` et
+`app-livreur-mobile/src/theme.ts` en recopient les jetons (projets indépendants),
+toute évolution doit y être répercutée.
 
 | Rôle | Couleur | Usage |
 | --- | --- | --- |
-| Or cuivré | `#C5A059` | marque, titres forts, actions principales |
-| Kraft | `#D2B48C` | repères de trajet — rappel du colis |
-| Blanc cassé | `#F5F5F5` | texte courant |
-| Fond de page | `#100F0D` | neutre chaud |
-| Surface (carte) | `#1C1A16` | neutre chaud |
-| Surface haute | `#2B2721` | éléments en relief |
-| Bordure | `#403930` | séparations |
+| Primary | `#C4451A` | actions principales, marque, étape en cours |
+| Secondary | `#116E68` | repère de départ, éléments de confiance |
+| Accent | `#E8A317` | ce qui doit attirer l'œil (héritier de l'or de la charte) |
+| Background | `#FBF7F2` | fond de page, légèrement chaud |
+| Surface | `#FFFFFF` | cartes |
+| Text | `#1A1A1A` / `#57504B` / `#7C736C` | principal / secondaire / atténué |
+| Semantic | `#12805A` `#9A5B00` `#C8352F` `#1D5FD0` | succès / avertissement / erreur / info |
 
-Trois partis pris qui font la différence entre « thème sombre » et « premium » :
+Continuité de marque : le noir `#1A1A1A` de la charte initiale devient la couleur
+de texte, et l'or cuivré devient l'accent — l'identité survit au passage en clair.
 
-- **Neutres chauds, jamais gris froids.** Un gris neutre fait paraître l'or terne et
-  sale ; toutes les palettes de luxe reposent sur des neutres chauds (famille « stone »).
-  Le noir de marque `#1A1A1A` reste la matière de référence ; le fond de page descend
-  légèrement en dessous pour que l'élévation des cartes se voie.
-- **L'or est traité en métal, pas en aplat.** Le laiton ne se lit comme un métal que
-  s'il porte un clair et un sombre : dégradé sur les boutons, les bulles, le logotype
-  (peint dans les lettres via `background-clip: text`) et les points d'étape franchis.
-- **L'élévation vient de l'ombre et d'un liseré haut**, pas du contraste de luminance —
-  la formule WCAG écrase les écarts dans les tons sombres et n'est pas un bon guide ici.
+**Contrastes vérifiés** (WCAG AA, seuil 4,5:1) : blanc sur primary 4,98 ; primary
+sur surface 4,98 ; blanc sur secondary 6,08 ; texte sur fond 16,3 ; texte
+secondaire 7,9 ; atténué 4,64 ; succès 4,93 ; avertissement 5,43 ; erreur 5,24 ;
+info 5,83. `--primary-vif` (#E85D2A) est plus lumineux mais **réservé aux aplats
+décoratifs**, jamais au texte.
 
-L'extrémité sombre du dégradé est bornée à `#B08E4C` : plus bas, le bas des lettres du
-logotype (4,14:1) et le texte des boutons (4,35:1) repassaient sous le seuil de 4,5:1.
-Après correction, tout le dégradé tient : logotype 5,64:1, texte de bouton 5,93 à 11,05:1.
+Deux règles qui tiennent tout :
 
-Typographie : **Oswald** en capitales pour les titres et la marque, **Montserrat** pour le
-corps de texte. Les deux sont **auto-hébergées** (`src/polices/`, 68 Ko au total) : sur un
-réseau mobile instable, dépendre d'un CDN de polices ajoute un aller-retour qui retarde le
-premier rendu. Ce sont des polices variables — un fichier par famille couvre toutes les
-graisses.
+- **Aucun état ne repose sur la seule couleur.** L'étape en cours porte un halo
+  et un libellé en gras ; l'onglet actif de la navigation porte un trait
+  supérieur ; les bandeaux d'erreur portent une icône ; la barre de répartition
+  du dashboard est doublée d'une légende chiffrée.
+- **Icônes en SVG inline**, pas d'emoji (rendu variable selon le téléphone, ne
+  prend pas la couleur du texte) ni de librairie (poids inutile sur réseau lent).
 
-Tous les couples de couleurs dépassent le seuil WCAG AA (texte sur carte : 14,9:1 ; texte
-secondaire : 7,2:1 ; or sur carte : 6,6:1 ; kraft sur carte : 8,2:1).
+Cartes : tuiles **CARTO light_all**, désaturées — les routes colorées d'OSM
+entreraient en concurrence avec le marqueur terracotta.
 
-Deux choix liés au thème sombre :
-
-- La carte utilise les tuiles **CARTO dark_matter** : les tuiles OSM standard, très claires,
-  jureraient avec le noir mat et écraseraient le marqueur cuivré.
-- Le marqueur du livreur est une pastille dorée à halo pulsant — un point fixe se perdrait
-  sur un fond sombre.
-
-Les animations sont courtes (180–420 ms, courbe `Expo.out`) et ne portent jamais
-d'information à elles seules : `prefers-reduced-motion` les neutralise sans rien retirer.
+Animations courtes (160–400 ms, courbe `Expo.out`), neutralisées par
+`prefers-reduced-motion` sans perte d'information.
 
 ## Suivi et conversation
 

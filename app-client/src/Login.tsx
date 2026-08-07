@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { api, ApiError, setToken, decodeRole } from './api';
 import { Marque } from './Marque';
+import { IconeAlerte } from './composants/Icones';
 
 export function Login({ onConnecte }: { onConnecte: () => void }) {
   const [inscription, setInscription] = useState(false);
@@ -95,7 +96,12 @@ export function Login({ onConnecte }: { onConnecte: () => void }) {
             />
           </div>
 
-          {erreur && <p className="erreur">{erreur}</p>}
+          {erreur && (
+            <div className="bandeau-erreur" role="alert">
+              <IconeAlerte className="icone-inline" />
+              <span>{erreur}</span>
+            </div>
+          )}
 
           <button type="submit" disabled={enCours} style={{ marginTop: 8 }}>
             {enCours ? 'Patientez…' : inscription ? 'Créer mon compte' : 'Se connecter'}

@@ -37,9 +37,10 @@ export function CarteSuivi({ courseId }: { courseId: string }) {
       attributionControl: true,
     });
 
-    // Tuiles sombres : les tuiles OSM standard, très claires, jureraient avec
-    // le noir mat de la charte et écraseraient le marqueur cuivré.
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    // Tuiles claires et désaturées : elles laissent le marqueur terracotta
+    // ressortir, là où les tuiles OSM standard (routes rouges et jaunes)
+    // entreraient en concurrence avec lui.
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap, &copy; CARTO',
     }).addTo(carte);
@@ -125,7 +126,7 @@ export function CarteSuivi({ courseId }: { courseId: string }) {
       marqueurRef.current = L.marker(point, {
         icon: L.divIcon({
           className: 'marqueur-livreur',
-          // Halo pulsant : sur une carte sombre, un point fixe se perdrait.
+          // Halo pulsant : un point fixe se perdrait parmi les rues.
           html: `<span class="halo-livreur"></span>`,
           iconSize: [20, 20],
           iconAnchor: [10, 10],
@@ -140,7 +141,7 @@ export function CarteSuivi({ courseId }: { courseId: string }) {
     <div className="carte apparition" style={{ animationDelay: '120ms' }}>
       <div className="entete" style={{ marginBottom: 14 }}>
         <h2 style={{ margin: 0 }}>Suivi en direct</h2>
-        <span className={`badge ${connecte && position ? '' : 'neutre'}`}>
+        <span className={`badge ${connecte && position ? 'succes' : ''}`}>
           <span className={`pastille ${connecte && position ? 'vivante' : ''}`} />
           {!connecte ? 'Reconnexion' : position ? 'En direct' : 'En attente'}
         </span>

@@ -174,7 +174,7 @@ export function ChatMasque({ courseId, onFermer }: { courseId: string; onFermer:
                     key={m.id}
                     style={{
                       alignSelf: moi ? 'flex-end' : 'flex-start',
-                      backgroundColor: moi ? couleurs.or : couleurs.bordure,
+                      backgroundColor: moi ? couleurs.primary : couleurs.bordure,
                       borderRadius: 14,
                       paddingHorizontal: 13,
                       paddingVertical: 9,
@@ -182,7 +182,7 @@ export function ChatMasque({ courseId, onFermer }: { courseId: string; onFermer:
                       maxWidth: '82%',
                     }}
                   >
-                    <Text style={{ color: moi ? couleurs.encre : couleurs.texte, fontSize: 15 }}>
+                    <Text style={{ color: moi ? couleurs.surCouleur : couleurs.texte, fontSize: 15 }}>
                       {m.contenu}
                     </Text>
                   </View>

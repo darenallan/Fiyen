@@ -1,28 +1,30 @@
 import { StyleSheet } from 'react-native';
 
 /**
- * Charte Fiyen Delivery, alignée sur les trois interfaces web.
+ * Charte Fiyen Delivery, alignée sur les trois interfaces web
+ * (app-client/src/index.css fait référence).
  *
- * Neutres CHAUDS et non gris froids : un gris neutre fait paraître l'or terne.
- * `orSombre` est borné à #B08E4C — plus bas, le texte des boutons repasserait
- * sous le seuil de contraste de 4,5:1.
+ * Terracotta sur fond chaud : `primary` tient 4,98:1 avec du blanc, et le noir
+ * de marque #1A1A1A reste la couleur de texte.
  */
 export const couleurs = {
-  or: '#c5a059',
-  orClair: '#e3c68a',
-  orSombre: '#b08e4c',
-  kraft: '#d2b48c',
+  primary: '#c4451a',
+  primarySombre: '#a03714',
+  primaryDoux: '#fdefe9',
+  secondary: '#116e68',
+  accent: '#e8a317',
 
-  fond: '#100f0d',
-  panneau: '#1c1a16',
-  panneauHaut: '#2b2721',
-  bordure: '#403930',
+  fond: '#fbf7f2',
+  panneau: '#ffffff',
+  panneauHaut: '#f6f1ea',
+  bordure: '#e3d8cb',
 
-  texte: '#f5f5f5',
-  texteAttenue: '#b5ac9b',
-  encre: '#17150f',
-  succes: '#7cc98b',
-  danger: '#e88b8b',
+  texte: '#1a1a1a',
+  texteAttenue: '#57504b',
+  texteMuet: '#7c736c',
+  surCouleur: '#ffffff',
+  succes: '#12805a',
+  danger: '#c8352f',
 };
 
 export const styles = StyleSheet.create({
@@ -69,16 +71,11 @@ export const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     color: couleurs.texte,
-    // Champ en creux : plus sombre que la carte qui le porte.
-    backgroundColor: couleurs.fond,
+    backgroundColor: couleurs.panneau,
     marginTop: 6,
   },
   bouton: {
-    // React Native ne gère pas les dégradés CSS : l'effet métallique du web est
-    // approché par la teinte médiane de l'or et un liseré clair en bordure.
-    backgroundColor: couleurs.or,
-    borderWidth: 1,
-    borderColor: couleurs.orClair,
+    backgroundColor: couleurs.primary,
     borderRadius: 10,
     // cible tactile confortable, utilisable d'une main à l'arrêt
     minHeight: 52,
@@ -87,7 +84,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   boutonTexte: {
-    color: couleurs.encre,
+    color: couleurs.surCouleur,
     fontSize: 15,
     fontWeight: '700',
     letterSpacing: 1.1,
@@ -141,12 +138,12 @@ export function couleurStatut(statut: string, enService = true) {
   switch (statut) {
     case 'dispo':
     case 'livree':
-      return { fond: 'rgba(124,201,139,0.14)', texte: couleurs.succes };
+      return { fond: '#e6f5ef', texte: couleurs.succes };
     case 'en_course':
     case 'assignee':
     case 'recuperee':
     case 'en_route':
-      return { fond: 'rgba(197,160,89,0.14)', texte: couleurs.or };
+      return { fond: '#fdefe9', texte: couleurs.primary };
     default:
       return { fond: couleurs.bordure, texte: couleurs.texteAttenue };
   }

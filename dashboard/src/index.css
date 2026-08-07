@@ -1,9 +1,11 @@
 /* ==========================================================================
    FIYEN DELIVERY — dashboard compagnie
-   Mêmes jetons que les apps client et livreur : une seule identité pour les
-   trois interfaces. Les jetons sont recopiés plutôt que partagés via un paquet,
-   les projets Vite étant indépendants — toute évolution de la charte doit être
-   répercutée dans les trois.
+   Jetons identiques à app-client/src/index.css, qui fait référence. Recopiés
+   plutôt que partagés via un paquet (projets Vite indépendants).
+
+   Continuité de marque : le noir #1A1A1A devient la couleur de texte, et l'or
+   cuivré devient l'accent — l'identité survit au passage en clair.
+   Tous les couples texte/fond sont vérifiés >= 4,5:1 (WCAG AA).
    ========================================================================== */
 
 @font-face {
@@ -23,85 +25,131 @@
 }
 
 :root {
-  --or: #c5a059;
-  --kraft: #d2b48c;
-  --blanc-casse: #f5f5f5;
+  /* --- Couleurs de marque ---------------------------------------------- */
+  /* Terracotta : chaleur et énergie, sans être le rouge DoorDash ni le jaune
+     Glovo. `primary` tient 4,98:1 avec du blanc ; `primaryVif` est plus lumineux
+     mais réservé aux aplats décoratifs (dégradés, illustrations), jamais au
+     texte. */
+  --primary: #c4451a;
+  --primary-vif: #e85d2a;
+  --primary-sombre: #a03714;
+  --primary-doux: #fdefe9;
 
-  --or-clair: #e3c68a;
-  --or-sombre: #b08e4c;
+  /* Sarcelle profond : contraste complémentaire, registre « confiance/suivi ». */
+  --secondary: #116e68;
+  --secondary-doux: #e6f4f2;
 
-  --fond: #100f0d;
-  --surface: #1c1a16;
-  --surface-haute: #2b2721;
-  --bordure: #403930;
+  /* Ambre : héritier direct de l'or cuivré. Réservé à ce qui doit attirer
+     l'œil — direct, promotions, éléments vivants. */
+  --accent: #e8a317;
+  --accent-doux: #fdf3e0;
 
-  --texte: var(--blanc-casse);
-  --texte-attenue: #b5ac9b;
-  --accent-contraste: #17150f;
-  --succes: #7cc98b;
-  --danger: #e88b8b;
+  /* --- Surfaces --------------------------------------------------------- */
+  /* Fond légèrement chaud plutôt que gris froid : cohérent avec la terracotta. */
+  --fond: #fbf7f2;
+  --surface: #ffffff;
+  --surface-douce: #f6f1ea;
 
-  --ombre-carte: 0 2px 6px rgba(0, 0, 0, 0.45), 0 12px 32px rgba(0, 0, 0, 0.35);
-  --liseré-haut: inset 0 1px 0 rgba(245, 245, 245, 0.055);
+  /* --- Texte ------------------------------------------------------------ */
+  --texte: #1a1a1a;
+  --texte-2: #57504b;
+  --texte-muet: #7c736c;
+  --sur-couleur: #ffffff;
 
-  --r-sm: 9px;
-  --r-md: 14px;
-  --r-lg: 18px;
+  --bordure: #e3d8cb;
+  --bordure-forte: #cdbfae;
+
+  /* --- Sémantique ------------------------------------------------------- */
+  --succes: #12805a;
+  --succes-doux: #e6f5ef;
+  --warning: #9a5b00;
+  --warning-doux: #fdf1de;
+  --erreur: #c8352f;
+  --erreur-doux: #fdebea;
+  --info: #1d5fd0;
+  --info-doux: #e9f0fd;
+
+  /* --- Rythme d'espacement (échelle 4/8) -------------------------------- */
+  --e-1: 4px;
+  --e-2: 8px;
+  --e-3: 12px;
+  --e-4: 16px;
+  --e-5: 24px;
+  --e-6: 32px;
+  --e-7: 48px;
+
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-pill: 999px;
+
+  /* Ombres douces et colorées : sur fond clair, une ombre grise salit. */
+  --ombre-1: 0 1px 2px rgba(60, 42, 30, 0.06), 0 1px 3px rgba(60, 42, 30, 0.05);
+  --ombre-2: 0 2px 6px rgba(60, 42, 30, 0.07), 0 8px 20px rgba(60, 42, 30, 0.06);
+  --ombre-3: 0 4px 12px rgba(60, 42, 30, 0.1), 0 16px 36px rgba(60, 42, 30, 0.08);
+
+  /* Expo.out : départ franc, arrivée douce — sensation de réactivité. */
   --courbe: cubic-bezier(0.16, 1, 0.3, 1);
+  --duree-courte: 160ms;
+  --duree: 240ms;
 
   --titre: 'Oswald', 'Impact', system-ui, sans-serif;
   --corps: 'Montserrat', system-ui, 'Segoe UI', Roboto, sans-serif;
 
+  /* Hauteur de la barre de navigation, pour réserver la place en bas de page. */
+  --h-nav: 66px;
+
   font-family: var(--corps);
-  /* 15px : un back-office affiche plus de données qu'une app mobile. */
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 1.55;
   color: var(--texte);
   background: var(--fond);
   -webkit-font-smoothing: antialiased;
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   margin: 0;
   background: var(--fond);
+  min-height: 100vh;
+  overscroll-behavior-y: contain;
 }
+
+/* --------------------------------- Titres -------------------------------- */
 
 h1,
 h2,
 h3 {
   font-family: var(--titre);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   font-weight: 700;
-  margin: 0 0 16px;
+  margin: 0;
   color: var(--texte);
 }
 
 h1 {
-  font-size: 24px;
+  font-size: 26px;
+  line-height: 1.15;
 }
 
 h2 {
   font-size: 15px;
-  letter-spacing: 0.11em;
-  color: var(--texte-attenue);
+  letter-spacing: 0.1em;
+  color: var(--texte-muet);
 }
 
 h3 {
-  font-size: 14px;
+  font-size: 15px;
 }
 
 p {
   margin: 0;
-}
-
-a {
-  color: var(--or);
 }
 
 /* -------------------------------- Marque --------------------------------- */
@@ -110,157 +158,162 @@ a {
   font-family: var(--titre);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.24em;
-  font-size: 21px;
+  letter-spacing: 0.2em;
+  font-size: 22px;
   line-height: 1;
-  background: linear-gradient(176deg, var(--or-clair) 0%, var(--or) 55%, var(--or-sombre) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--primary);
 }
 
 .marque-sous {
-  font-size: 9px;
-  letter-spacing: 0.36em;
+  font-family: var(--corps);
+  font-size: 10px;
+  letter-spacing: 0.38em;
   text-transform: uppercase;
-  color: var(--texte-attenue);
-  margin-top: 6px;
+  color: var(--texte-muet);
+  margin-top: 5px;
+}
+
+/* -------------------------------- Structure ------------------------------- */
+
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: var(--e-5) var(--e-4);
+  /* Réserve la hauteur de la barre de navigation : sans cela, la dernière
+     carte reste masquée derrière. */
+  padding-bottom: calc(var(--h-nav) + var(--e-6));
+  min-height: 100vh;
+}
+
+.entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--e-5);
+}
+
+.carte {
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: var(--r-lg);
+  padding: var(--e-5);
+  margin-bottom: var(--e-4);
+  box-shadow: var(--ombre-1);
+}
+
+/* Carte principale : dégradé chaud très léger, pour hiérarchiser sans crier. */
+.carte-vedette {
+  position: relative;
+  overflow: hidden;
+  border-color: transparent;
+  background: linear-gradient(150deg, #fff4ee 0%, var(--surface) 68%);
+  box-shadow: var(--ombre-2);
+}
+
+.carte-vedette::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
 }
 
 /* --------------------------------- Champs -------------------------------- */
 
 label {
   display: block;
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  font-size: 12px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--texte-attenue);
-  margin-bottom: 6px;
+  font-weight: 600;
+  color: var(--texte-2);
+  margin-bottom: var(--e-2);
 }
 
-input,
-select {
+input {
   font: inherit;
-  padding: 10px 13px;
-  border: 1px solid var(--bordure);
+  width: 100%;
+  padding: 14px var(--e-4);
+  border: 1.5px solid var(--bordure);
   border-radius: var(--r-sm);
-  /* Champ en creux, comme une gravure dans la carte. */
-  background: var(--fond);
+  background: var(--surface);
   color: var(--texte);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35);
-  transition: border-color 180ms var(--courbe), box-shadow 180ms var(--courbe);
+  transition: border-color var(--duree-courte) var(--courbe),
+    box-shadow var(--duree-courte) var(--courbe);
 }
 
 input::placeholder {
-  color: #6d675f;
+  color: var(--texte-muet);
 }
 
-input:focus,
-select:focus {
+input:focus {
   outline: none;
-  border-color: var(--or);
-  box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.18);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-doux);
 }
 
 /* -------------------------------- Boutons -------------------------------- */
 
 button {
   font-family: var(--titre);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   cursor: pointer;
-  min-height: 42px;
-  padding: 10px 18px;
+  width: 100%;
+  /* 52px : cible tactile confortable, au-delà du minimum de 44px */
+  min-height: 52px;
+  padding: 14px var(--e-5);
   border: none;
   border-radius: var(--r-sm);
-  /* Le reflet fait lire le laiton comme un métal, pas comme un aplat jaune. */
-  background: linear-gradient(145deg, var(--or-clair) 0%, var(--or) 46%, var(--or-sombre) 100%);
-  color: var(--accent-contraste);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26), 0 2px 8px rgba(0, 0, 0, 0.35);
-  transition: transform 180ms var(--courbe), filter 180ms var(--courbe),
-    box-shadow 180ms var(--courbe);
+  background: var(--primary);
+  color: var(--sur-couleur);
+  box-shadow: var(--ombre-1);
+  transition: transform var(--duree-courte) var(--courbe),
+    background var(--duree-courte) var(--courbe),
+    box-shadow var(--duree-courte) var(--courbe);
 }
 
 button:hover:not(:disabled) {
-  filter: brightness(1.08);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 5px 18px rgba(197, 160, 89, 0.26);
+  background: var(--primary-sombre);
+  box-shadow: var(--ombre-2);
 }
 
 button:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: scale(0.975);
 }
 
 button:focus-visible {
-  outline: 2px solid var(--or-clair);
-  outline-offset: 3px;
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
 }
 
 button:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
-button.secondaire {
-  background: none;
-  border: 1px solid var(--bordure);
+button.contour {
+  background: var(--surface);
+  border: 1.5px solid var(--bordure-forte);
   color: var(--texte);
   box-shadow: none;
 }
 
-button.secondaire:hover:not(:disabled) {
-  border-color: var(--or);
-  color: var(--or);
-  background: rgba(197, 160, 89, 0.07);
-  filter: none;
+button.contour:hover:not(:disabled) {
+  background: var(--primary-doux);
+  border-color: var(--primary);
+  color: var(--primary);
   box-shadow: none;
 }
 
-/* -------------------------------- Surfaces -------------------------------- */
-
-.carte {
-  background: var(--surface);
-  border: 1px solid var(--bordure);
-  border-radius: var(--r-lg);
-  padding: 22px;
-  box-shadow: var(--ombre-carte), var(--liseré-haut);
-}
-
-/* -------------------------------- Tableaux -------------------------------- */
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  text-align: left;
-  padding: 13px 14px;
-  border-bottom: 1px solid var(--bordure);
-  font-size: 14px;
-}
-
-th {
-  font-family: var(--titre);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--texte-attenue);
-}
-
-tbody tr {
-  transition: background 160ms var(--courbe);
-}
-
-tbody tr:hover {
-  background: rgba(197, 160, 89, 0.045);
-}
-
-tbody tr:last-child td {
-  border-bottom: none;
+button.discret {
+  width: auto;
+  min-height: 40px;
+  padding: var(--e-2) var(--e-4);
+  font-size: 12px;
 }
 
 /* --------------------------------- Badges -------------------------------- */
@@ -268,40 +321,41 @@ tbody tr:last-child td {
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 5px 12px;
-  border-radius: 999px;
+  gap: var(--e-2);
+  padding: 6px 13px;
+  border-radius: var(--r-pill);
   font-family: var(--titre);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.11em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  background: rgba(181, 172, 155, 0.08);
-  color: var(--texte-attenue);
+  background: var(--surface-douce);
+  color: var(--texte-2);
   border: 1px solid var(--bordure);
 }
 
-/* En course / assignée / en route : l'or signale l'activité en cours. */
-.badge.en_course,
-.badge.assignee,
-.badge.recuperee,
-.badge.en_route {
-  background: rgba(197, 160, 89, 0.13);
-  color: var(--or);
-  border-color: rgba(197, 160, 89, 0.32);
+.badge.actif {
+  background: var(--accent-doux);
+  color: var(--warning);
+  border-color: #f3ddb2;
 }
 
-.badge.dispo,
-.badge.livree {
-  background: rgba(124, 201, 139, 0.12);
+.badge.succes {
+  background: var(--succes-doux);
   color: var(--succes);
-  border-color: rgba(124, 201, 139, 0.3);
+  border-color: #bfe4d6;
 }
 
-.badge.annulee {
-  background: rgba(232, 139, 139, 0.12);
-  color: var(--danger);
-  border-color: rgba(232, 139, 139, 0.3);
+.badge.info {
+  background: var(--info-doux);
+  color: var(--info);
+  border-color: #c5d8fa;
+}
+
+.badge.erreur {
+  background: var(--erreur-doux);
+  color: var(--erreur);
+  border-color: #f6c9c7;
 }
 
 .pastille {
@@ -309,6 +363,7 @@ tbody tr:last-child td {
   height: 7px;
   border-radius: 50%;
   background: currentColor;
+  flex-shrink: 0;
 }
 
 .pastille.vivante {
@@ -322,137 +377,455 @@ tbody tr:last-child td {
     transform: scale(1);
   }
   50% {
-    opacity: 0.45;
-    transform: scale(0.82);
+    opacity: 0.4;
+    transform: scale(0.75);
   }
 }
 
-/* ------------------------------ Chiffres clés ----------------------------- */
+/* ------------------------- Suivi de commande (étapes) --------------------- */
 
-.grille-stats {
+.etapes {
+  display: flex;
+  flex-direction: column;
+}
+
+.etape-ligne {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 14px;
+  grid-template-columns: 26px 1fr;
+  gap: var(--e-3);
+  align-items: stretch;
 }
 
-.stat {
-  background: var(--surface-haute);
-  border: 1px solid var(--bordure);
-  border-radius: var(--r-md);
-  padding: 16px 18px;
-  box-shadow: var(--liseré-haut);
+.etape-piste {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.stat-valeur {
+.etape-point {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2.5px solid var(--bordure-forte);
+  background: var(--surface);
+  flex-shrink: 0;
+  margin-top: 3px;
+  transition: background var(--duree) var(--courbe), border-color var(--duree) var(--courbe);
+}
+
+.etape-ligne.faite .etape-point {
+  background: var(--succes);
+  border-color: var(--succes);
+}
+
+/* L'étape courante ne se distingue pas que par la couleur : elle porte aussi
+   un halo et un libellé en gras. */
+.etape-ligne.courante .etape-point {
+  border-color: var(--primary);
+  background: var(--surface);
+  box-shadow: 0 0 0 5px var(--primary-doux);
+}
+
+.etape-barre {
+  width: 2.5px;
+  flex: 1;
+  min-height: 26px;
+  background: var(--bordure);
+  margin: var(--e-1) 0;
+  border-radius: 2px;
+  transition: background var(--duree) var(--courbe);
+}
+
+.etape-ligne.faite .etape-barre {
+  background: var(--succes);
+}
+
+.etape-libelle {
   font-family: var(--titre);
-  font-size: 30px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--texte);
-}
-
-.stat-valeur.accent {
-  background: linear-gradient(170deg, var(--or-clair), var(--or-sombre));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.stat-libelle {
-  font-size: 11px;
-  letter-spacing: 0.1em;
+  font-size: 13px;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--texte-attenue);
-  margin-top: 8px;
+  color: var(--texte-muet);
+  padding-bottom: var(--e-5);
+  transition: color var(--duree) var(--courbe);
+}
+
+.etape-ligne.faite .etape-libelle {
+  color: var(--texte-2);
+}
+
+.etape-ligne.courante .etape-libelle {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.etape-ligne:last-child .etape-libelle {
+  padding-bottom: 0;
+}
+
+/* --------------------------------- Trajet -------------------------------- */
+
+.trajet {
+  display: grid;
+  gap: var(--e-3);
+  margin-top: var(--e-4);
+}
+
+.trajet-point {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: var(--e-3);
+  align-items: start;
+}
+
+.trajet-marque {
+  font-family: var(--titre);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--sur-couleur);
+  background: var(--secondary);
+  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+}
+
+.trajet-point:last-child .trajet-marque {
+  background: var(--primary);
+}
+
+.trajet-adresse {
+  font-size: 15px;
+  color: var(--texte);
+  padding-top: 4px;
 }
 
 /* ---------------------------------- Carte --------------------------------- */
 
-.carte-flotte {
-  height: 420px;
+.carte-suivi {
+  height: 300px;
   border-radius: var(--r-md);
   overflow: hidden;
   border: 1px solid var(--bordure);
-  position: relative;
-  z-index: 0;
-}
-
-/* Sélecteur composé (les deux classes portent sur le même élément) : leaflet.css
-   est importé depuis un composant, donc après cette feuille. */
-.carte-flotte.leaflet-container {
-  background: var(--fond);
-  font-family: var(--corps);
 }
 
 .leaflet-popup-content-wrapper,
 .leaflet-popup-tip {
-  background: var(--surface-haute);
+  background: var(--surface);
   color: var(--texte);
 }
 
 .leaflet-control-attribution {
-  background: rgba(16, 15, 13, 0.85) !important;
-  color: var(--texte-attenue) !important;
+  background: rgba(255, 255, 255, 0.86) !important;
   font-size: 10px !important;
 }
 
-.leaflet-control-attribution a {
-  color: var(--texte-attenue) !important;
+/* Marqueur du livreur : pastille terracotta à halo pulsant, repérable sur une
+   carte claire sans se confondre avec les routes. */
+.halo-livreur {
+  display: block;
+  width: 14px;
+  height: 14px;
+  margin: 3px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 2.5px solid #fff;
+  box-shadow: 0 0 0 0 rgba(196, 69, 26, 0.45), 0 1px 4px rgba(0, 0, 0, 0.25);
+  animation: halo 2.2s var(--courbe) infinite;
 }
 
-.leaflet-control-zoom a {
-  background: var(--surface-haute) !important;
-  color: var(--texte) !important;
-  border-color: var(--bordure) !important;
+@keyframes halo {
+  0% { box-shadow: 0 0 0 0 rgba(196, 69, 26, 0.42), 0 1px 4px rgba(0,0,0,.25); }
+  70% { box-shadow: 0 0 0 15px rgba(196, 69, 26, 0), 0 1px 4px rgba(0,0,0,.25); }
+  100% { box-shadow: 0 0 0 0 rgba(196, 69, 26, 0), 0 1px 4px rgba(0,0,0,.25); }
 }
 
-.bouton-recentrer {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  min-height: 34px;
-  padding: 6px 14px;
-  font-size: 11px;
-  background: rgba(28, 26, 22, 0.92);
+/* -------------------------------- Messages -------------------------------- */
+
+.fil-messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  max-height: 300px;
+  overflow-y: auto;
+  padding: var(--e-1) 2px;
+}
+
+.bulle {
+  max-width: 82%;
+  padding: 11px 15px;
+  font-size: 15px;
+  line-height: 1.45;
+  border-radius: var(--r-md);
+  word-break: break-word;
+  animation: entree-bulle var(--duree) var(--courbe);
+}
+
+.bulle.moi {
+  align-self: flex-end;
+  background: var(--primary);
+  color: var(--sur-couleur);
+  border-bottom-right-radius: 5px;
+}
+
+.bulle.lui {
+  align-self: flex-start;
+  background: var(--surface-douce);
   color: var(--texte);
   border: 1px solid var(--bordure);
-  box-shadow: none;
-  /* au-dessus des tuiles et des contrôles Leaflet */
-  z-index: 500;
+  border-bottom-left-radius: 5px;
 }
 
-.bouton-recentrer:hover {
-  background: rgba(197, 160, 89, 0.14);
-  color: var(--or);
-  border-color: var(--or);
-  filter: none;
-  box-shadow: none;
+@keyframes entree-bulle {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.muted-carte {
+.zone-saisie {
+  display: flex;
+  gap: var(--e-2);
+  margin-top: var(--e-4);
+}
+
+.zone-saisie button {
+  width: auto;
+  padding: 0 var(--e-5);
+  flex-shrink: 0;
+}
+
+/* --------------------------- Barre de navigation -------------------------- */
+
+.nav-bas {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--h-nav);
+  /* Respecte la zone de geste des téléphones sans bouton physique. */
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--bordure);
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  z-index: 900;
+}
+
+.nav-bas button {
+  width: auto;
+  flex: 1;
+  min-height: 0;
+  padding: var(--e-2) var(--e-1);
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--texte-muet);
+  font-family: var(--corps);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  transition: color var(--duree-courte) var(--courbe);
+}
+
+.nav-bas button:hover:not(:disabled) {
+  background: none;
+  box-shadow: none;
+  color: var(--texte-2);
+}
+
+.nav-bas button.actif {
+  color: var(--primary);
+}
+
+.nav-bas .icone {
+  width: 23px;
+  height: 23px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* L'onglet actif est signalé par un trait, pas seulement par la couleur. */
+.nav-bas button.actif::before {
+  content: '';
   position: absolute;
-  inset: auto 14px 14px 14px;
-  margin: 0;
-  padding: 11px 15px;
+  top: 0;
+  width: 30px;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--primary);
+}
+
+.nav-bas button {
+  position: relative;
+}
+
+/* Pastille de notification sur un onglet. */
+.nav-point {
+  position: absolute;
+  top: 8px;
+  right: 50%;
+  margin-right: -16px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--surface);
+}
+
+/* ------------------------------- Chargement ------------------------------- */
+
+/* Squelettes : réservent la place définitive du contenu, ce qui évite le
+   décalage de mise en page quand les données arrivent. */
+.squelette {
+  background: linear-gradient(
+    90deg,
+    var(--surface-douce) 25%,
+    #efe7dd 37%,
+    var(--surface-douce) 63%
+  );
+  background-size: 400% 100%;
+  animation: glissement 1.3s ease-in-out infinite;
   border-radius: var(--r-sm);
-  background: rgba(28, 26, 22, 0.94);
-  border: 1px solid var(--bordure);
-  color: var(--texte-attenue);
-  font-size: 13px;
-  z-index: 500;
+}
+
+@keyframes glissement {
+  from {
+    background-position: 100% 50%;
+  }
+  to {
+    background-position: 0 50%;
+  }
+}
+
+.squelette-ligne {
+  height: 13px;
+  margin-bottom: var(--e-2);
+}
+
+/* -------------------------------- États vides ----------------------------- */
+
+.etat-vide {
+  text-align: center;
+  padding: var(--e-6) var(--e-4);
+}
+
+.etat-vide .illus {
+  width: 66px;
+  height: 66px;
+  margin: 0 auto var(--e-4);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--primary-doux);
+  color: var(--primary);
+}
+
+.etat-vide .illus svg {
+  width: 30px;
+  height: 30px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Jeton d'illustration : porte une icône dans un cercle teinté. */
+.jeton-info {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--secondary-doux);
+  color: var(--secondary);
+}
+
+.jeton-info svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icone-inline {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Visible des seuls lecteurs d'écran : complète une information que la couleur
+   ou la position transmet visuellement. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* -------------------------------- Divers --------------------------------- */
 
-.muted-inline {
-  color: var(--texte-attenue);
+.attenue {
+  color: var(--texte-2);
+  font-size: 14px;
+}
+
+.muet {
+  color: var(--texte-muet);
   font-size: 13px;
 }
 
 .erreur {
-  color: var(--danger);
+  color: var(--erreur);
   font-size: 14px;
-  margin: 10px 0;
+  margin-top: var(--e-3);
+}
+
+/* Bandeau d'erreur : l'icône double l'information portée par la couleur. */
+.bandeau-erreur {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  background: var(--erreur-doux);
+  border: 1px solid #f6c9c7;
+  color: var(--erreur);
+  border-radius: var(--r-sm);
+  padding: var(--e-3) var(--e-4);
+  font-size: 14px;
+  margin-bottom: var(--e-4);
 }
 
 .apparition {
@@ -479,4 +852,228 @@ tbody tr:last-child td {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ====================== Spécifique au dashboard (desktop) ================= */
+
+:root {
+  /* Un back-office affiche plus de données qu'une app mobile. */
+  font-size: 15px;
+}
+
+.app,
+.nav-bas {
+  /* Structures propres au mobile, inutiles ici. */
+  display: none;
+}
+
+h1 { font-size: 24px; margin-bottom: var(--e-5); }
+h2 { font-size: 14px; }
+
+button {
+  width: auto;
+  min-height: 42px;
+  padding: 10px var(--e-5);
+  font-size: 13px;
+}
+
+button.secondaire {
+  background: var(--surface);
+  border: 1.5px solid var(--bordure-forte);
+  color: var(--texte);
+  box-shadow: none;
+}
+
+button.secondaire:hover:not(:disabled) {
+  background: var(--primary-doux);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+input, select {
+  font: inherit;
+  padding: 10px 13px;
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--texte);
+  width: auto;
+}
+
+select:focus, input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-doux);
+}
+
+/* -------------------------------- Tableaux -------------------------------- */
+
+table { width: 100%; border-collapse: collapse; }
+
+th, td {
+  text-align: left;
+  padding: 13px var(--e-4);
+  border-bottom: 1px solid var(--bordure);
+  font-size: 14px;
+}
+
+th {
+  font-family: var(--titre);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--texte-muet);
+  background: var(--surface-douce);
+}
+
+th:first-child { border-top-left-radius: var(--r-sm); }
+th:last-child { border-top-right-radius: var(--r-sm); }
+
+tbody tr { transition: background var(--duree-courte) var(--courbe); }
+tbody tr:hover { background: var(--primary-doux); }
+tbody tr:last-child td { border-bottom: none; }
+
+/* Tableau scrollable horizontalement plutôt que de casser la mise en page. */
+.table-defilante { overflow-x: auto; }
+
+/* ------------------------------ Chiffres clés ----------------------------- */
+
+.grille-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: var(--e-3);
+}
+
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-left: 3px solid var(--bordure-forte);
+  border-radius: var(--r-md);
+  padding: var(--e-4) var(--e-5);
+  transition: border-color var(--duree-courte) var(--courbe),
+    transform var(--duree-courte) var(--courbe);
+}
+
+.stat:hover { transform: translateY(-2px); }
+
+/* Le liseré coloré distingue les compteurs qui demandent une action. */
+.stat.a-surveiller { border-left-color: var(--primary); }
+.stat.positif { border-left-color: var(--succes); }
+
+.stat-valeur {
+  font-family: var(--titre);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat.a-surveiller .stat-valeur { color: var(--primary); }
+.stat.positif .stat-valeur { color: var(--succes); }
+
+.stat-libelle {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texte-muet);
+  margin-top: var(--e-2);
+}
+
+/* Barre de répartition : une lecture visuelle immédiate des proportions. */
+.repartition {
+  display: flex;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface-douce);
+  margin-top: var(--e-4);
+}
+
+.repartition span { display: block; height: 100%; }
+
+.legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-4);
+  margin-top: var(--e-3);
+  font-size: 12px;
+  color: var(--texte-2);
+}
+
+.legende i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+
+/* ---------------------------------- Carte --------------------------------- */
+
+.carte-flotte {
+  height: 420px;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  border: 1px solid var(--bordure);
+  position: relative;
+  z-index: 0;
+}
+
+.bouton-recentrer {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  min-height: 34px;
+  padding: 6px 14px;
+  font-size: 11px;
+  background: var(--surface);
+  color: var(--texte);
+  border: 1px solid var(--bordure-forte);
+  box-shadow: var(--ombre-1);
+  z-index: 500;
+}
+
+.muted-carte {
+  position: absolute;
+  inset: auto 14px 14px 14px;
+  margin: 0;
+  padding: 11px 15px;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--bordure);
+  color: var(--texte-2);
+  font-size: 13px;
+  box-shadow: var(--ombre-1);
+  z-index: 500;
+}
+
+.muted-inline { color: var(--texte-muet); font-size: 13px; }
+
+/* --------------------------- Barre d'outils ------------------------------- */
+
+.barre-outils {
+  display: flex;
+  gap: var(--e-3);
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: var(--e-4);
+}
+
+.champ-recherche { position: relative; flex: 1; min-width: 200px; }
+
+.champ-recherche input { width: 100%; padding-left: 38px; }
+
+.champ-recherche svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 17px;
+  height: 17px;
+  stroke: var(--texte-muet);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  pointer-events: none;
 }

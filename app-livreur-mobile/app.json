@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "scheme": "fiyenlivreur",
     "ios": {
       "supportsTablet": false,
@@ -20,7 +20,7 @@
     "android": {
       "package": "bf.fiyen.livreur",
       "adaptiveIcon": {
-        "backgroundColor": "#100F0D",
+        "backgroundColor": "#FBF7F2",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -48,6 +48,6 @@
         }
       ]
     ],
-    "backgroundColor": "#100F0D"
+    "backgroundColor": "#FBF7F2"
   }
 }

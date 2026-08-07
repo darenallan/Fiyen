@@ -17,6 +17,7 @@ export function Courses() {
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState<string | null>(null);
   const [filtre, setFiltre] = useState<string>('');
+  const [recherche, setRecherche] = useState('');
 
   const [telephoneClient, setTelephoneClient] = useState('');
   const [adresseDepart, setAdresseDepart] = useState('');
@@ -95,6 +96,17 @@ export function Courses() {
     }
   }
 
+  // Filtrage en mémoire : la liste est déjà chargée, inutile de resolliciter l'API
+  // à chaque frappe sur un réseau lent.
+  const terme = recherche.trim().toLowerCase();
+  const coursesFiltrees = terme
+    ? courses.filter(
+        (c) =>
+          c.adresse_depart.toLowerCase().includes(terme) ||
+          c.adresse_arrivee.toLowerCase().includes(terme),
+      )
+    : courses;
+
   return (
     <div className="apparition">
       <h1>Courses</h1>
@@ -139,9 +151,20 @@ export function Courses() {
       </div>
 
       <div className="carte">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <h2 style={{ margin: 0 }}>Liste des courses</h2>
-          <select value={filtre} onChange={(e) => setFiltre(e.target.value)}>
+        <h2 style={{ marginBottom: 14 }}>Liste des courses</h2>
+        <div className="barre-outils">
+          <span className="champ-recherche">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
+            </svg>
+            <input
+              value={recherche}
+              onChange={(e) => setRecherche(e.target.value)}
+              placeholder="Rechercher une adresse…"
+              aria-label="Rechercher une course par adresse"
+            />
+          </span>
+          <select value={filtre} onChange={(e) => setFiltre(e.target.value)} aria-label="Filtrer par statut">
             <option value="">Tous les statuts</option>
             {Object.entries(LIBELLES_STATUT).map(([cle, libelle]) => (
               <option key={cle} value={cle}>
@@ -153,9 +176,11 @@ export function Courses() {
 
         {erreur && <p className="erreur">{erreur}</p>}
         {chargement ? (
-          <p>Chargement…</p>
-        ) : courses.length === 0 ? (
-          <p className="muted-inline">Aucune course.</p>
+          <p className="muted-inline">Chargement…</p>
+        ) : coursesFiltrees.length === 0 ? (
+          <p className="muted-inline">
+            {recherche ? 'Aucune course ne correspond à cette recherche.' : 'Aucune course.'}
+          </p>
         ) : (
           <table>
             <thead>
@@ -167,7 +192,7 @@ export function Courses() {
               </tr>
             </thead>
             <tbody>
-              {courses.map((c) => (
+              {coursesFiltrees.map((c) => (
                 <tr key={c.id}>
                   <td>
                     {c.adresse_depart} → {c.adresse_arrivee}

@@ -272,11 +272,11 @@ export function EcranLivreur({ onDeconnexion }: { onDeconnexion: () => void }) {
 
                 <View style={{ marginVertical: 10 }}>
                   <Text style={{ color: couleurs.texte, fontSize: 15 }}>
-                    <Text style={{ color: couleurs.or, fontWeight: '700' }}>A </Text>
+                    <Text style={{ color: couleurs.primary, fontWeight: '700' }}>A </Text>
                     {course.adresse_depart}
                   </Text>
                   <Text style={{ color: couleurs.texte, fontSize: 15, marginTop: 2 }}>
-                    <Text style={{ color: couleurs.or, fontWeight: '700' }}>B </Text>
+                    <Text style={{ color: couleurs.primary, fontWeight: '700' }}>B </Text>
                     {course.adresse_arrivee}
                   </Text>
                 </View>
