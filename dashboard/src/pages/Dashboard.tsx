@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError } from '../api/client';
 import type { ConfigTarifaire, DashboardStats } from '../api/types';
+import { Compteur } from '../components/Compteur';
 
 const LIBELLES_COURSES: Record<string, string> = {
   en_attente: 'En attente',
@@ -34,7 +35,7 @@ function Stat({
   const classe = ton && valeur > 0 ? ton : '';
   return (
     <div className={`stat ${classe}`}>
-      <div className="stat-valeur">{valeur}</div>
+      <div className="stat-valeur"><Compteur valeur={valeur} /></div>
       <div className="stat-libelle">{libelle}</div>
     </div>
   );
@@ -84,9 +85,33 @@ export function Dashboard() {
       });
   }, []);
 
+  const c = stats?.courses_par_statut ?? {};
+  const l = stats?.livreurs_par_statut ?? {};
+  const enCours = (c.assignee ?? 0) + (c.recuperee ?? 0) + (c.en_route ?? 0);
+  const enAttente = c.en_attente ?? 0;
+  const dispo = l.dispo ?? 0;
+
   return (
-    <div className="apparition">
-      <h1>Tableau de bord</h1>
+    <div className="cascade">
+      <div className="heros">
+        <span className="badge">
+          <span className="pastille vivante" />
+          En direct
+        </span>
+        <h1 style={{ marginTop: 16 }}>
+          {enCours === 0
+            ? 'Aucune course en cours'
+            : `${enCours} course${enCours > 1 ? 's' : ''} en cours`}
+        </h1>
+        <p className="sous">
+          {enAttente > 0
+            ? `${enAttente} course${enAttente > 1 ? 's' : ''} en attente d'assignation.`
+            : 'Rien en attente d’assignation.'}
+          {' '}
+          {dispo} livreur{dispo > 1 ? 's' : ''} disponible{dispo > 1 ? 's' : ''}.
+        </p>
+      </div>
+
       {erreur && <p className="erreur">{erreur}</p>}
 
       <div className="carte" style={{ marginBottom: 18 }}>

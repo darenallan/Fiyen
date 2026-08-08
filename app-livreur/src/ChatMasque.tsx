@@ -27,7 +27,7 @@ export function ChatMasque({ courseId, onFermer }: { courseId: string; onFermer:
   const timerRef = useRef<number | null>(null);
   const delaiRef = useRef(DELAI_RECONNEXION_MIN_MS);
   const montéRef = useRef(true);
-  const finRef = useRef<HTMLDivElement | null>(null);
+  const filRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     montéRef.current = true;
@@ -113,8 +113,11 @@ export function ChatMasque({ courseId, onFermer }: { courseId: string; onFermer:
     };
   }, [courseId]);
 
+  // On fait défiler le fil lui-même, pas la page : `scrollIntoView` entraînerait
+  // tout le document et ferait atterrir le livreur au milieu de l'écran.
   useEffect(() => {
-    finRef.current?.scrollIntoView({ block: 'end' });
+    const fil = filRef.current;
+    if (fil) fil.scrollTop = fil.scrollHeight;
   }, [messages]);
 
   function envoyer(e: FormEvent) {
@@ -145,7 +148,7 @@ export function ChatMasque({ courseId, onFermer }: { courseId: string; onFermer:
 
       {session && (
         <>
-          <div className="fil-messages">
+          <div className="fil-messages" ref={filRef}>
             {messages.length === 0 ? (
               <p className="attenue" style={{ margin: 0 }}>
                 Aucun message pour le moment.
@@ -157,7 +160,6 @@ export function ChatMasque({ courseId, onFermer }: { courseId: string; onFermer:
                 </div>
               ))
             )}
-            <div ref={finRef} />
           </div>
 
           {canalFerme ? (

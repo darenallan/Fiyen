@@ -142,10 +142,10 @@ export function EcranLivreur({ onDeconnexion }: { onDeconnexion: () => void }) {
         </div>
       )}
 
-      {onglet === 'service' && (<>
+      {onglet === 'service' && (<div className="cascade">
 
-      <div className="carte carte-vedette apparition">
-        <span className={`badge ${livreur.statut === 'offline' ? '' : livreur.statut === 'dispo' ? 'succes' : 'actif'}`}>
+      <div className={`heros ${livreur.statut === 'offline' ? 'heros-sourd' : ''}`}>
+        <span className="badge">
           <span className={`pastille ${livreur.statut === 'en_course' ? 'vivante' : ''}`} />
           {livreur.statut === 'offline'
             ? 'Hors service'
@@ -153,7 +153,14 @@ export function EcranLivreur({ onDeconnexion }: { onDeconnexion: () => void }) {
               ? 'Disponible'
               : 'En course'}
         </span>
-        <h1 style={{ marginTop: 12 }}>{livreur.nom}</h1>
+        <h1 style={{ marginTop: 16 }}>{livreur.nom}</h1>
+        <p className="sous">
+          {livreur.statut === 'offline'
+            ? 'Prenez votre service pour recevoir des courses.'
+            : livreur.statut === 'dispo'
+              ? 'Vous êtes visible par votre compagnie.'
+              : `${courseAAgir} course${courseAAgir > 1 ? 's' : ''} à traiter.`}
+        </p>
       </div>
 
       <div className="carte">
@@ -202,9 +209,9 @@ export function EcranLivreur({ onDeconnexion }: { onDeconnexion: () => void }) {
         </div>
       )}
 
-      </>)}
+      </div>)}
 
-      {onglet === 'courses' && (<>
+      {onglet === 'courses' && (<div className="cascade">
       {courseEnDiscussion && (
         <ChatMasque courseId={courseEnDiscussion} onFermer={() => setCourseEnDiscussion(null)} />
       )}
@@ -254,7 +261,7 @@ export function EcranLivreur({ onDeconnexion }: { onDeconnexion: () => void }) {
         )}
       </div>
 
-      </>)}
+      </div>)}
 
       {onglet === 'profil' && (
         <div className="apparition">

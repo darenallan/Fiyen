@@ -1,4 +1,4 @@
-# Plateforme de livraison B2B — Burkina Faso
+# Fiyen Delivery — plateforme de livraison B2B (Burkina Faso)
 
 Ce fichier sert de contexte permanent pour Claude Code sur ce projet. Il résume les décisions déjà actées — ne pas les redemander, les appliquer.
 
@@ -8,13 +8,15 @@ Plateforme B2B (SaaS) destinée aux **compagnies de livraison existantes** au Bu
 
 Ce projet est indépendant de mes autres projets (Sanhia, BarkaPay, etc.) — ne pas mélanger le code, les conventions ou l'infra.
 
+> **⚠️ Ce n'est PAS une marketplace.** Il n'y a ni commerce, ni catalogue de produits, ni panier, ni checkout, ni promotions — et il n'y en aura pas en V1. **C'est la compagnie qui crée la course pour le client**, lequel ne commande pas depuis l'application. Toute demande de refonte inspirée d'Uber Eats / DoorDash doit être confrontée à ce point avant d'être appliquée : ces écrans n'existent pas et les inventer supposerait des données fictives.
+
 ## Modèle économique
 
 Hybride :
 - Abonnement mensuel par compagnie partenaire (accès dashboard + nombre de livreurs inclus)
 - Commission sur chaque course livrée via la plateforme
 
-Le barème précis n'est pas encore fixé — ne pas coder de valeurs en dur, prévoir une table de configuration modifiable.
+Le barème précis n'est pas encore fixé — ne pas coder de valeurs en dur. Table `config_tarifaire`, versionnée par `active_a_partir`, lue via `GET /api/dashboard/config-tarifaire`. Pas encore d'API d'écriture : le barème est inséré en SQL (voir le script de seed).
 
 ## Plateformes cibles
 
@@ -26,80 +28,112 @@ Le barème précis n'est pas encore fixé — ne pas coder de valeurs en dur, pr
 
 ## Périmètre du MVP
 
-À livrer en V1, dans cet ordre de priorité :
-1. Authentification par rôle (compagnie / livreur / client)
-2. Gestion complète des commandes : création, **assignation** (manuelle puis auto), suivi de **statut** (en attente → assignée → récupérée → en route → livrée)
-3. Tracking temps réel de la position des livreurs
-4. Masquage du numéro entre client et livreur (aucun numéro réel échangé)
-5. Dashboard compagnie : vue flotte en temps réel + gestion des livreurs + stats de base
+| # | Priorité | État |
+| --- | --- | --- |
+| 1 | Authentification par rôle (compagnie / livreur / client) | ✅ |
+| 2 | Commandes : création, assignation manuelle, suivi de statut | ✅ |
+| 3 | Tracking temps réel de la position des livreurs | ✅ |
+| 4 | Masquage du numéro (aucun numéro réel échangé) | ✅ chat texte ; voix WebRTC et repli PSTN non faits |
+| 5 | Dashboard compagnie : flotte temps réel, livreurs, stats | ✅ |
+
+Statuts de course : `en_attente → assignee → recuperee → en_route → livree`, plus `annulee` avant `en_route`. Les transitions invalides sont rejetées côté backend (`internal/models.TransitionValide`).
 
 Hors périmètre V1 (Phase 2+) : paiement intégré (mobile money), attribution automatique intelligente, notation, API publique.
 
 ## Stack technique
 
-| Composant | Choix |
-| --- | --- |
-| Backend | Go (Fiber), API REST + WebSocket |
-| Base de données | PostgreSQL + extension PostGIS |
-| Cache / pub-sub temps réel | Redis |
-| Dashboard compagnie | React |
-| App livreur | Android natif via **Expo / React Native** + PWA |
-| App client | Web (React) |
-| Hébergement | Cloud type Render, scalable horizontalement |
+| Composant | Choix | Dossier |
+| --- | --- | --- |
+| Backend | Go (Fiber), API REST + WebSocket | `backend/` |
+| Base de données | PostgreSQL + PostGIS | conteneur `fiyen-postgres` |
+| Cache / pub-sub temps réel | Redis | conteneur `fiyen-redis` |
+| Dashboard compagnie | React + Vite + Leaflet | `dashboard/` |
+| App livreur (PWA) | React + Vite | `app-livreur/` |
+| App livreur (natif) | Expo / React Native | `app-livreur-mobile/` |
+| App client | React + Vite + Leaflet | `app-client/` |
+| Hébergement | Cloud type Render, scalable horizontalement | — |
 
-## Schéma de base de données (point de départ)
+## Démarrage local
 
-```sql
-CREATE EXTENSION IF NOT EXISTS postgis;
+**Ports non standards, et c'est délibéré** : cette machine a déjà des PostgreSQL natifs sur 5432/5433 et un service sur 8080.
 
-CREATE TABLE livreurs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nom TEXT NOT NULL,
-    telephone_hash TEXT NOT NULL,      -- jamais le numéro en clair côté client
-    statut TEXT NOT NULL DEFAULT 'offline', -- offline|dispo|en_course
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE TABLE positions_livreurs (
-    livreur_id UUID REFERENCES livreurs(id),
-    position GEOGRAPHY(POINT, 4326) NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    PRIMARY KEY (livreur_id)
-);
-CREATE INDEX idx_position_gist ON positions_livreurs USING GIST (position);
-
-CREATE TABLE courses (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    client_id UUID NOT NULL,
-    livreur_id UUID REFERENCES livreurs(id),
-    statut TEXT NOT NULL DEFAULT 'en_attente',
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE TABLE sessions_masquage (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    course_id UUID REFERENCES courses(id) UNIQUE,
-    numero_virtuel TEXT,          -- null si canal WebRTC pur
-    expire_at TIMESTAMPTZ NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT now()
-);
+```bash
+cd backend && docker compose up -d && go run ./cmd/api   # API sur :8090, Postgres sur :55020
+cd dashboard     && npm run dev    # :5173
+cd app-livreur   && npm run dev    # :5175
+cd app-client    && npm run dev    # :5176
 ```
+
+`CORS_ORIGINS` (dans `backend/.env`) doit lister les origines des fronts, sinon le navigateur bloque tout.
+
+### Jeu de démonstration
+
+```bash
+node backend/scripts/seed-demo.mjs --reset
+```
+
+Mot de passe commun : `motdepasse123`.
+
+| Rôle | Téléphone |
+| --- | --- |
+| Compagnie « Fiyen Démo » | `+22670001000` |
+| Livreur Salif Traoré (a une course assignée) | `+22670001001` |
+| Livreur Aminata Zongo | `+22670001002` |
+| Cliente Awa Ouédraogo | `+22670001003` |
+
+> Le script est en **Node et non en shell** : sous Git Bash sur Windows, les accents des chaînes littérales sont corrompus avant d'atteindre `curl`, ce qui produisait des « March**�** de Rood Woko » en base.
+
+## Base de données
+
+Le schéma vit dans `backend/migrations/*.sql`, appliqué par `go run ./cmd/migrate` (suivi dans `schema_migrations`). Tables : `compagnies`, `utilisateurs`, `livreurs`, `clients`, `courses`, `positions_livreurs`, `sessions_masquage`, `messages_masques`, `config_tarifaire`.
+
+Le schéma initial du cahier des charges a été étendu : ajout de `compagnies` (tenants), `utilisateurs` (comptes multi-rôles nécessaires à l'auth) et rattachement de tout à `compagnie_id`.
 
 ## Tracking temps réel
 
-- Le livreur pousse sa position GPS toutes les 3-5s via WebSocket vers le backend Go.
-- Le backend écrit dans Redis (`GEOADD`) pour les requêtes géospatiales, et publie sur un canal `course:{livreur_id}:position`.
-- Le client (ou le dashboard compagnie) s'abonne au canal de sa course active pour recevoir les mises à jour en direct.
-- TTL de présence : une clé `livreur:last_seen:{id}` expire après 30s d'inactivité → statut "hors ligne" si dépassé.
+- Le livreur pousse sa position toutes les 3-5 s. **Deux canaux d'entrée** :
+  - `GET /ws/livreur/position` (WebSocket) — utilisé par la PWA.
+  - `POST /api/livreurs/me/positions` (lot) — utilisé par l'app mobile, dont la tâche Android d'arrière-plan est réveillée par lots et ne peut pas tenir une socket ouverte. Plus économe en données.
+- Chaque position est publiée sur **deux canaux Redis** : `course:{livreur_id}:position` (le client qui suit sa course) et `compagnie:{compagnie_id}:positions` (la vue flotte). Le canal porté par la compagnie évite au dashboard de s'abonner livreur par livreur.
+- Chaque position porte son **horodatage de capture**, pas d'envoi. Une position rejouée après une coupure est diffusée mais **pas persistée** si elle est plus ancienne que celle en base — sinon un rattrapage tardif écraserait une position récente.
+- TTL de présence : `livreur:last_seen:{id}` expire après 30 s. `GET /api/livreurs/` renvoie `en_ligne`, la présence **réelle**, à distinguer du statut déclaré.
 
 ## Masquage du numéro
 
-Principe : jamais d'échange direct du numéro réel entre client et livreur.
+Garantie centrale : aucun numéro réel n'est échangé, et le client ne connaît jamais le `livreur_id`. Seul le `session_id` circule côté front (`backend/internal/masquage`).
 
-- **Approche principale** : appel/message in-app via WebRTC (fonctionne en data, pas de dépendance opérateur).
-- **Fallback PSTN** : Africa's Talking (couvre le Burkina Faso en SMS/USSD/voix) pour générer un numéro virtuel temporaire le temps de la course, si la connexion data est instable. Vérifier la couverture voix exacte pour le Burkina Faso au moment de l'intégration — elle varie selon les pays.
-- Chaque course génère une `session_masquage` avec un `expire_at` — le canal est fermé et inutilisable une fois la course terminée.
-- Le `livreur_id` réel n'est jamais exposé au client : seul le `session_id` circule côté front.
+- **Fait et testé** : chat texte via `GET /ws/masquage/:sessionId`. Les messages sont **persistés puis relayés** — sur un réseau instable, un simple relais perdrait tout message envoyé pendant que l'autre partie est déconnectée.
+- **Fait, non exploité** : le relais de signaling WebRTC (`offre` / `reponse` / `ice`) est en place et relayé sans être conservé. Il ne manque que la couche voix côté front.
+- **Non fait** : le repli PSTN. `internal/masquage/pstn.go` définit l'interface ; l'implémentation par défaut **échoue explicitement** plutôt que de simuler un numéro — un faux numéro donnerait l'illusion d'un canal de secours. Pour l'activer : brancher Africa's Talking **et vérifier la couverture voix exacte au Burkina Faso**, qui varie selon les pays.
+
+Contrôles d'accès (24 garanties couvertes par `test-masquage`) : seules les deux extrémités de la course accèdent au canal — **la compagnie elle-même en est exclue** ; « introuvable » et « accès refusé » renvoient le même 404 ; l'expiration est revérifiée **à chaque envoi**, pas seulement à la connexion.
+
+## Système de design
+
+Référence : **`app-client/src/index.css`**. Les jetons sont **recopiés** dans `app-livreur/`, `dashboard/` et `app-livreur-mobile/src/theme.ts` (projets Vite indépendants) — toute évolution doit être répercutée aux quatre endroits. Un workspace npm réglerait cette dette si le projet grandit.
+
+| Rôle | Couleur |
+| --- | --- |
+| Primary (terracotta) | `#C4451A` — tient 4,98:1 avec du blanc |
+| Secondary (sarcelle) | `#116E68` |
+| Accent (ambre) | `#E8A317` |
+| Fond / Surface | `#FBF7F2` / `#FFFFFF` |
+| Texte | `#1A1A1A` / `#57504B` / `#7C736C` |
+| Sémantique | `#12805A` `#9A5B00` `#C8352F` `#1D5FD0` |
+
+`--primary-vif` (`#E85D2A`) est **réservé aux aplats décoratifs**, jamais au texte (3,48:1).
+
+Typographie **auto-hébergée** (`src/polices/`, 68 Ko) : dépendre d'un CDN de polices ajoute un aller-retour qui retarde le premier rendu sur réseau lent. **Montserrat 800** pour les grands titres, **Oswald** en capitales pour les petits libellés seulement — l'Oswald partout lisait « technique/industriel » plutôt que grand public.
+
+Règles qui tiennent l'ensemble :
+
+- **Un héros coloré pleine largeur** ouvre chaque écran principal (client, livreur, dashboard). Une carte blanche de plus n'a aucune présence.
+- **Aucun état ne repose sur la seule couleur** : trait sur l'onglet actif, halo + gras sur l'étape en cours, icône sur les bandeaux d'erreur, légende chiffrée sous la barre de répartition.
+- **Icônes en SVG inline**, ni emoji (rendu variable, ne prend pas la couleur du texte) ni librairie.
+- Cartes en tuiles **CARTO light_all**, désaturées — les routes colorées d'OSM concurrenceraient les marqueurs.
+- Animations 160–480 ms, courbe `Expo.out`, neutralisées par `prefers-reduced-motion` sans perte d'information.
+
+Navigation basse à 3 onglets sur les deux apps mobiles : Suivi/Commandes/Profil côté client, Service/Courses/Profil côté livreur. **Pas d'onglet « Explorer » ni « Panier »** — voir l'avertissement en tête de fichier.
 
 ## Sécurité (non négociable)
 
@@ -107,15 +141,24 @@ Principe : jamais d'échange direct du numéro réel entre client et livreur.
 - `telephone_hash`, jamais le numéro en clair, transmis au client ou stocké en clair
 - JWT courte durée + contrôle d'accès par rôle
 - Respect OWASP Top 10 sur toutes les API
-- Rate limiting sur les endpoints publics (notamment ceux liés au tracking et au masquage)
+- Rate limiting sur les endpoints publics (auth, tracking, masquage)
 
 ## Contraintes réseau locales
 
-- Le réseau mobile au Burkina Faso n'est pas toujours stable : prévoir un mode dégradé côté app livreur (mise en cache locale des positions, envoi différé si perte de connexion).
-- Optimiser la fréquence de mise à jour GPS pour limiter la conso de data.
+- Réseau mobile instable : mode dégradé côté app livreur — positions mises en cache localement (max 300) et rejouées à la reconnexion, reconnexion WebSocket en backoff exponentiel.
+- Économie de données : une position n'est pas renvoyée en dessous de **15 m** de déplacement, avec un envoi forcé toutes les 20 s pour maintenir la présence. Rafraîchissement des listes à 20 s, pas plus souvent.
+
+## Dette et points ouverts
+
+- **L'app Expo n'a jamais tourné sur un appareil.** Le bundle Android se construit et le manifeste natif est correct (permissions + `LocationTaskService` en `foregroundServiceType="location"`), mais le suivi en arrière-plan — sa seule raison d'être — n'est pas vérifié. Il faut un *development build* (`npx expo run:android`) ; ça ne marche pas dans Expo Go. À faire en priorité avant de s'appuyer dessus.
+- Depuis un téléphone, `localhost` ne désigne pas la machine de dev : renseigner l'IP LAN dans `EXPO_PUBLIC_API_URL` et l'ajouter à `CORS_ORIGINS`.
+- Jetons de design dupliqués dans 4 projets (voir ci-dessus).
+- `react-router-dom` (dashboard) remonte des CVE liées au SSR/RSC — sans objet ici, SPA cliente pure.
+- **MCP 21st non installé.** Vérifié plusieurs fois via `claude mcp list`. Pour l'ajouter : `npx @21st-dev/cli@latest init --client claude` avec une clé de 21st.dev/mcp. Le plugin `ui-ux-pro-max`, lui, est disponible et a servi au système de couleurs.
+- Le dépôt n'a que les deux commits d'origine ; tout le travail est en attente de commit.
 
 ## Roadmap
 
-- **Phase 1 (MVP)** : voir "Périmètre du MVP" ci-dessus
-- **Phase 2** : paiement mobile money, attribution automatique des courses, notation livreurs/clients
-- **Phase 3** : multi-compagnies avancé, analytics, API publique
+- **Phase 1 (MVP)** : voir le tableau du périmètre — les 5 priorités sont couvertes.
+- **Phase 2** : paiement mobile money, attribution automatique des courses, notation livreurs/clients, voix WebRTC sur le signaling existant, repli PSTN Africa's Talking.
+- **Phase 3** : multi-compagnies avancé, analytics, API publique.

@@ -40,6 +40,16 @@ const EXPLICATIONS: Record<StatutCourse, string> = {
   annulee: 'Cette commande a été annulée.',
 };
 
+function indexEtape(statut: StatutCourse): number {
+  const i = ETAPES.findIndex((e) => e.statut === statut);
+  return i < 0 ? 0 : i;
+}
+
+/** Avancement en pourcentage, pour la barre du héros. */
+function progression(statut: StatutCourse): number {
+  return Math.round((indexEtape(statut) / (ETAPES.length - 1)) * 100);
+}
+
 function libelleBadge(statut: StatutCourse): { texte: string; classe: string } {
   if (statut === 'livree') return { texte: 'Livrée', classe: 'succes' };
   if (statut === 'annulee') return { texte: 'Annulée', classe: 'erreur' };
@@ -164,27 +174,39 @@ export function EcranClient({ onDeconnexion }: { onDeconnexion: () => void }) {
                 </p>
               </div>
             ) : (
-              <>
-                <div className="carte carte-vedette apparition">
+              <div className="cascade">
+                <div className="heros">
                   {(() => {
                     const b = libelleBadge(courseActive.statut);
                     return (
-                      <span className={`badge ${b.classe}`}>
+                      <span className="badge">
                         <span className={`pastille ${suiviPossible ? 'vivante' : ''}`} />
                         {b.texte}
                       </span>
                     );
                   })()}
 
-                  <h1 style={{ marginTop: 14 }}>{TITRES[courseActive.statut]}</h1>
-                  <p className="attenue" style={{ marginTop: 6 }}>
-                    {EXPLICATIONS[courseActive.statut]}
-                  </p>
+                  <h1 style={{ marginTop: 16 }}>{TITRES[courseActive.statut]}</h1>
+                  <p className="sous">{EXPLICATIONS[courseActive.statut]}</p>
+
+                  {courseActive.statut !== 'annulee' && (
+                    <>
+                      <div className="heros-progres">
+                        <span style={{ width: `${progression(courseActive.statut)}%` }} />
+                      </div>
+                      <div className="heros-etape">
+                        <span>
+                          Étape {indexEtape(courseActive.statut) + 1} sur {ETAPES.length}
+                        </span>
+                        <span>{progression(courseActive.statut)} %</span>
+                      </div>
+                    </>
+                  )}
 
                   <Trajet course={courseActive} />
                 </div>
 
-                <div className="carte apparition" style={{ animationDelay: '60ms' }}>
+                <div className="carte">
                   <h2 style={{ marginBottom: 18 }}>Progression</h2>
                   <Etapes statut={courseActive.statut} />
                 </div>
@@ -192,7 +214,7 @@ export function EcranClient({ onDeconnexion }: { onDeconnexion: () => void }) {
                 {suiviPossible && <CarteSuivi courseId={courseActive.id} />}
 
                 <ChatMasque courseId={courseActive.id} />
-              </>
+              </div>
             )}
           </>
         )}

@@ -122,32 +122,39 @@ body {
   overscroll-behavior-y: contain;
 }
 
-/* --------------------------------- Titres -------------------------------- */
+/* --------------------------------- Titres --------------------------------
+   Les grands titres passent en Montserrat très gras plutôt qu'en capitales
+   condensées : l'Oswald en capitales lit « technique/industriel », alors qu'on
+   vise le registre grand public. Oswald reste sur les petits libellés, où sa
+   condensation apporte du caractère sans alourdir. */
 
-h1,
-h2,
-h3 {
-  font-family: var(--titre);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-weight: 700;
+h1 {
+  font-family: var(--corps);
+  font-weight: 800;
+  font-size: 34px;
+  line-height: 1.08;
+  letter-spacing: -0.022em;
   margin: 0;
   color: var(--texte);
 }
 
-h1 {
-  font-size: 26px;
-  line-height: 1.15;
-}
-
 h2 {
-  font-size: 15px;
-  letter-spacing: 0.1em;
+  font-family: var(--titre);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
   color: var(--texte-muet);
+  margin: 0;
 }
 
 h3 {
-  font-size: 15px;
+  font-family: var(--corps);
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--texte);
 }
 
 p {
@@ -203,22 +210,98 @@ p {
   box-shadow: var(--ombre-1);
 }
 
-/* Carte principale : dégradé chaud très léger, pour hiérarchiser sans crier. */
-.carte-vedette {
+/* Héros : bloc coloré pleine largeur. C'est lui qui donne le ton — une carte
+   blanche de plus n'aurait aucune présence. Le texte est en blanc sur le
+   dégradé, dont l'extrémité la plus claire (#E85D2A) tient 3,48:1, suffisant
+   pour du texte large (>= 24px / gras). */
+.heros {
   position: relative;
   overflow: hidden;
-  border-color: transparent;
-  background: linear-gradient(150deg, #fff4ee 0%, var(--surface) 68%);
-  box-shadow: var(--ombre-2);
+  border-radius: var(--r-lg);
+  padding: var(--e-5) var(--e-5) var(--e-6);
+  margin-bottom: var(--e-4);
+  background: linear-gradient(145deg, #e85d2a 0%, var(--primary) 52%, #9c3312 100%);
+  color: var(--sur-couleur);
+  box-shadow: 0 8px 28px rgba(196, 69, 26, 0.28);
 }
 
-.carte-vedette::before {
+/* Halo lumineux en haut à droite : donne du volume au bloc. */
+.heros::after {
   content: '';
   position: absolute;
-  inset: 0 0 auto 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--primary), var(--accent));
+  top: -60%;
+  right: -20%;
+  width: 78%;
+  height: 170%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18), transparent 62%);
+  pointer-events: none;
 }
+
+.heros > * { position: relative; z-index: 1; }
+
+.heros h1 { color: var(--sur-couleur); font-size: 36px; }
+
+.heros .sous {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+  margin-top: var(--e-2);
+}
+
+.heros .badge {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.34);
+  color: var(--sur-couleur);
+  backdrop-filter: blur(4px);
+}
+
+/* Barre de progression du héros : traduit l'avancement en une lecture unique. */
+.heros-progres {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.26);
+  overflow: hidden;
+  margin-top: var(--e-5);
+}
+
+.heros-progres span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: #fff;
+  /* L'animation part de la valeur précédente : la progression se voit. */
+  transition: width 900ms var(--courbe);
+}
+
+.heros-etape {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+  margin-top: var(--e-2);
+}
+
+/* Trajet posé sur le héros : fond translucide plutôt qu'une carte séparée. */
+.heros .trajet {
+  background: rgba(255, 255, 255, 0.13);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--r-md);
+  padding: var(--e-4);
+  margin-top: var(--e-5);
+}
+
+.heros .trajet-marque,
+/* Sélecteur aligné sur celui de la règle générale (`:last-child`), sinon
+   cette dernière l'emporte en spécificité et le repère B se retrouve en
+   terracotta sur terracotta — donc invisible. */
+.heros .trajet-point:last-child .trajet-marque {
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--primary);
+}
+
+.heros .trajet-adresse { color: var(--sur-couleur); }
+.heros .muet { color: rgba(255, 255, 255, 0.72); }
 
 /* --------------------------------- Champs -------------------------------- */
 
@@ -834,10 +917,21 @@ button.discret {
   animation: apparition 400ms var(--courbe) both;
 }
 
+/* Entrée en cascade : chaque bloc arrive après le précédent. */
+.cascade > * {
+  animation: apparition 520ms var(--courbe) both;
+}
+
+.cascade > *:nth-child(1) { animation-delay: 0ms; }
+.cascade > *:nth-child(2) { animation-delay: 70ms; }
+.cascade > *:nth-child(3) { animation-delay: 140ms; }
+.cascade > *:nth-child(4) { animation-delay: 210ms; }
+.cascade > *:nth-child(5) { animation-delay: 280ms; }
+
 @keyframes apparition {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(18px) scale(0.985);
   }
   to {
     opacity: 1;
@@ -929,4 +1023,11 @@ button.danger:hover:not(:disabled) {
 .muted {
   color: var(--texte-2);
   font-size: 14px;
+}
+
+/* Hors service : le héros s'éteint. L'absence de couleur porte l'information
+   aussi clairement que le libellé, sans reposer sur elle seule. */
+.heros.heros-sourd {
+  background: linear-gradient(145deg, #6b625b 0%, #4d4640 60%, #3b3530 100%);
+  box-shadow: 0 8px 24px rgba(60, 42, 30, 0.22);
 }
