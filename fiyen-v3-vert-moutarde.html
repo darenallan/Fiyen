@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fiyen — direction artistique v3 (vert forêt / moutarde)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --noir:#16332A; --noir-2:#1E4235; --noir-3:#2C5646;
+    --creme:#F5EFE1; --creme-2:#EAE0C6;
+    --or:#E0A526; --or-deep:#B37E1A; --or-glow:rgba(224,165,38,.4);
+    --secondary:#B37E1A; --secondary-glow:rgba(224,165,38,.3);
+    --rust:#D9581F;
+    --success-bg:rgba(107,143,94,.18); --success-fg:#4F7A5E;
+    --tx-dark:#F5EFE1; --tx-dark-muted:#A9BDB0;
+    --tx-light:#16332A; --tx-light-muted:#6E7C74;
+    --radius:20px;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:#0E1F19; color:var(--tx-dark);
+    font-family:'Work Sans',sans-serif;
+    padding:32px 16px 64px;
+  }
+  .eyebrow{ font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; }
+
+  /* effet "qui brille" : léger sweep lumineux réutilisable sur les surfaces sombres et les CTA */
+  .dark-card::after, .hero-band::after, .stat-banner::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(115deg, transparent 42%, rgba(255,244,222,.16) 50%, transparent 58%);
+  }
+  .hero-cta::after, .cta-full::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.35) 48%, transparent 66%);
+  }
+
+  /* ---- amorce landing ---- */
+  .hero-band{ position:relative; overflow:hidden; background:radial-gradient(70% 90% at 82% 20%, var(--or-glow) 0%, rgba(224,165,38,0) 60%), var(--noir); border-radius:28px; padding:52px 30px; margin-bottom:48px; max-width:900px; margin-left:auto; margin-right:auto; }
+  .hero-band svg.trail{ position:absolute; top:0; right:-40px; height:100%; width:60%; opacity:.35; }
+  .hero-band .eyebrow{ color:var(--or); margin-bottom:16px; display:block; }
+  .hero-title{ font-family:'Baloo 2',sans-serif; font-weight:800; font-size:clamp(28px,4.4vw,44px); line-height:1.08; max-width:560px; position:relative; }
+  .hero-title span{ color:var(--or); }
+  .hero-sub{ margin-top:16px; max-width:440px; color:var(--tx-dark-muted); font-size:15px; line-height:1.6; position:relative; }
+  .hero-cta{ margin-top:26px; display:inline-flex; align-items:center; gap:8px; background:var(--or); color:var(--noir); font-family:'Baloo 2',sans-serif; font-weight:700; font-size:15px; padding:13px 24px; border-radius:999px; position:relative; overflow:hidden; box-shadow:0 0 32px 4px var(--or-glow); }
+
+  /* ---- écrans ---- */
+  .screens-label{ text-align:center; color:#8FA398; margin:0 0 28px; }
+  .phones-row{ display:flex; flex-wrap:wrap; gap:32px; justify-content:center; align-items:flex-start; }
+  .phone-col{ width:284px; }
+  .phone-tag{ font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#8FA398; margin:0 0 10px 6px; }
+  .phone{ background:var(--noir-2); border:1px solid var(--noir-3); border-radius:36px; padding:14px; }
+  .screen{ background:var(--creme); border-radius:24px; min-height:540px; padding:20px 16px 22px; display:flex; flex-direction:column; gap:18px; color:var(--tx-light); }
+  .app-header{ display:flex; align-items:center; justify-content:space-between; }
+  .app-header h2{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:19px; margin:0; }
+  .app-header .meta{ font-family:'Space Mono',monospace; font-size:11px; color:var(--tx-light-muted); }
+  .icon-btn{ width:34px; height:34px; border-radius:50%; background:var(--creme-2); display:flex; align-items:center; justify-content:center; }
+  .icon-btn svg{ width:16px; height:16px; }
+
+  /* hero card sombre dans l'écran */
+  .dark-card{ background:radial-gradient(65% 80% at 85% 10%, var(--or-glow) 0%, rgba(224,165,38,0) 55%), var(--noir); border-radius:18px; padding:18px; color:var(--tx-dark); position:relative; overflow:hidden; }
+  .dark-card .badge{ position:absolute; top:14px; right:14px; background:var(--or); color:var(--noir); font-family:'Baloo 2',sans-serif; font-weight:700; font-size:13px; padding:5px 12px; border-radius:999px; box-shadow:0 0 18px 2px var(--or-glow); }
+  .route-svg{ width:100%; height:90px; margin:6px 0 4px; }
+  .route-svg path{ fill:none; stroke:var(--secondary); stroke-width:2.5; stroke-dasharray:1 9; stroke-linecap:round; filter:drop-shadow(0 0 4px var(--secondary-glow)); }
+  .moto-dot{ fill:var(--secondary); filter:drop-shadow(0 0 6px var(--secondary-glow)); }
+  .pulse{ animation:pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{ opacity:1 } 50%{ opacity:.35 } }
+  @media (prefers-reduced-motion: reduce){ .pulse{ animation:none } }
+
+  /* timeline enrichie */
+  .timeline{ display:flex; flex-direction:column; }
+  .step{ display:flex; gap:12px; position:relative; padding-bottom:22px; }
+  .step:last-child{ padding-bottom:0; }
+  .step::before{ content:""; position:absolute; left:13px; top:28px; bottom:0; width:2px; background:var(--creme-2); }
+  .step:last-child::before{ display:none; }
+  .step .dot{ width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; z-index:1; }
+  .step.done .dot{ background:var(--or); }
+  .step.active .dot{ background:var(--or); box-shadow:0 0 0 4px var(--or-glow); }
+  .step.pending .dot{ background:var(--creme-2); }
+  .step .dot svg{ width:14px; height:14px; }
+  .step .label{ font-weight:600; font-size:14px; margin:2px 0 2px; }
+  .step .time{ font-family:'Space Mono',monospace; font-size:11px; color:var(--tx-light-muted); }
+  .step.pending .label, .step.pending .time{ color:var(--tx-light-muted); font-weight:500; }
+
+  /* mini carte livreur / stats */
+  .driver-card{ display:flex; align-items:center; gap:12px; background:var(--creme-2); border-radius:16px; padding:12px 14px; }
+  .avatar{ width:40px; height:40px; border-radius:50%; background:var(--secondary); color:var(--creme); display:flex; align-items:center; justify-content:center; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:14px; flex-shrink:0; }
+  .driver-card .who{ flex:1; }
+  .driver-card .who .name{ font-weight:600; font-size:14px; }
+  .driver-card .who .plate{ font-family:'Space Mono',monospace; font-size:11px; color:var(--tx-light-muted); }
+  .call-btn{ width:36px; height:36px; border-radius:50%; background:var(--noir); display:flex; align-items:center; justify-content:center; }
+  .call-btn svg{ width:16px; height:16px; stroke:var(--secondary); }
+
+  .stat-row{ display:flex; gap:10px; }
+  .stat-chip{ flex:1; background:var(--creme-2); border-radius:14px; padding:10px 8px; text-align:center; }
+  .stat-chip .val{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:18px; }
+  .stat-chip .lbl{ font-family:'Space Mono',monospace; font-size:9.5px; letter-spacing:.04em; text-transform:uppercase; color:var(--tx-light-muted); margin-top:2px; }
+
+  .cta-full{ width:100%; background:var(--or); color:var(--noir); font-family:'Baloo 2',sans-serif; font-weight:700; font-size:15px; padding:14px; border-radius:14px; border:none; display:flex; align-items:center; justify-content:center; gap:8px; position:relative; overflow:hidden; box-shadow:0 0 24px 2px var(--or-glow); }
+  .urgent-eyebrow{ color:var(--rust); font-weight:700; margin-bottom:8px; display:block; }
+  .addr-line{ display:flex; align-items:center; gap:8px; font-weight:600; font-size:14px; margin:6px 0; }
+  .addr-line svg{ width:15px; height:15px; flex-shrink:0; stroke:var(--secondary); }
+
+  /* dashboard */
+  .stat-banner{ background:radial-gradient(70% 90% at 15% 0%, var(--or-glow) 0%, rgba(224,165,38,0) 55%), var(--noir); border-radius:18px; padding:18px; color:var(--tx-dark); position:relative; overflow:hidden; }
+  .stat-banner .big{ font-family:'Baloo 2',sans-serif; font-weight:800; font-size:38px; line-height:1; color:var(--or); text-shadow:0 0 22px var(--or-glow); }
+  .stat-banner .lbl{ font-size:13px; color:var(--tx-dark-muted); margin-top:4px; }
+  .stat-banner .trend{ font-family:'Space Mono',monospace; font-size:11px; color:var(--or); margin-top:10px; display:inline-block; }
+  .metric-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .metric-card{ background:var(--creme-2); border-radius:14px; padding:12px; }
+  .metric-card .val{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:19px; }
+  .metric-card .lbl{ font-size:11px; color:var(--tx-light-muted); margin-top:2px; }
+  .order-row{ display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-top:1px solid var(--creme-2); font-size:13px; }
+  .order-row:first-of-type{ border-top:none; }
+  .pill{ font-family:'Space Mono',monospace; font-size:10.5px; padding:4px 9px; border-radius:999px; }
+  .pill.en-cours{ background:var(--or); color:var(--noir); }
+  .pill.livre{ background:var(--success-bg); color:var(--success-fg); }
+</style>
+</head>
+<body>
+
+  <section class="hero-band">
+    <svg class="trail" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M -20 380 C 80 340, 60 220, 160 190 S 260 60 320 20" fill="none" style="stroke:var(--or)" stroke-width="3" stroke-dasharray="1 12" stroke-linecap="round"/>
+    </svg>
+    <span class="eyebrow">Fiyen — plateforme livreurs</span>
+    <h1 class="hero-title">Chaque livraison file<br>comme <span>le vent</span>.</h1>
+    <p class="hero-sub">Suivi en temps réel, livreurs protégés, compagnies aux commandes — la logistique du dernier kilomètre, en clair.</p>
+    <div class="hero-cta">Découvrir Fiyen →</div>
+  </section>
+
+  <p class="eyebrow screens-label">Direction retenue : vert forêt &amp; moutarde, registre chaleureux-populaire, avec brillance</p>
+
+  <div class="phones-row">
+
+    <div class="phone-col">
+      <p class="phone-tag">Écran 1 — tracking client</p>
+      <div class="phone"><div class="screen">
+        <div class="app-header">
+          <div><h2>Ma commande</h2><div class="meta">#FY-3042</div></div>
+          <div class="icon-btn"><svg viewBox="0 0 24 24" fill="none" style="stroke:var(--tx-light)" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+        </div>
+        <div class="dark-card">
+          <div class="badge">8 min</div>
+          <svg class="route-svg" viewBox="0 0 240 90"><path d="M10 70 C 60 70, 70 20, 120 25 S 200 15 230 20"/><circle class="moto-dot pulse" cx="120" cy="25" r="5"/></svg>
+          <div style="font-size:12px;color:var(--tx-dark-muted)">Trajet en direct</div>
+        </div>
+        <div class="timeline">
+          <div class="step done"><div class="dot"><svg viewBox="0 0 24 24" fill="none" style="stroke:var(--noir)" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div><div><div class="label">Commande reçue</div><div class="time">14:02</div></div></div>
+          <div class="step active"><div class="dot"><svg viewBox="0 0 24 24" fill="none" style="stroke:var(--noir)" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg></div><div><div class="label">Livreur en route</div><div class="time">14:10</div></div></div>
+          <div class="step pending"><div class="dot"></div><div><div class="label">Arrivée estimée</div><div class="time">14:18</div></div></div>
+        </div>
+        <div class="driver-card">
+          <div class="avatar">IS</div>
+          <div class="who"><div class="name">Issouf S.</div><div class="plate">Moto · 11 BF 4021</div></div>
+          <div class="call-btn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1.9.3 1.8.6 2.7a2 2 0 01-.4 2.1L8.1 9.7a16 16 0 006 6l1.2-1.2a2 2 0 012.1-.4c.9.3 1.8.5 2.7.6a2 2 0 011.9 2.2z"/></svg></div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="phone-col">
+      <p class="phone-tag">Écran 2 — app livreur</p>
+      <div class="phone"><div class="screen">
+        <div class="app-header">
+          <div><h2>Bonjour, Issouf</h2><div class="meta">Auj. 12 400 FCFA</div></div>
+          <div class="icon-btn"><svg viewBox="0 0 24 24" fill="none" style="stroke:var(--tx-light)" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div>
+        </div>
+        <div class="dark-card">
+          <span class="urgent-eyebrow eyebrow">Nouvelle course</span>
+          <div class="addr-line"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 018 8c0 6-8 12-8 12S4 16 4 10a8 8 0 018-8z"/></svg>Zone du Bois, secteur 15</div>
+          <div class="addr-line"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Ouaga 2000, villa 214</div>
+          <button class="cta-full">Démarrer la course →</button>
+        </div>
+        <div class="stat-row">
+          <div class="stat-chip"><div class="val">7</div><div class="lbl">courses</div></div>
+          <div class="stat-chip"><div class="val">42</div><div class="lbl">km</div></div>
+          <div class="stat-chip"><div class="val">96%</div><div class="lbl">ponctualité</div></div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="phone-col">
+      <p class="phone-tag">Écran 3 — dashboard entreprise</p>
+      <div class="phone"><div class="screen">
+        <div class="app-header">
+          <div><h2>STAR Logistique</h2><div class="meta">Vue d'ensemble</div></div>
+          <div class="icon-btn"><svg viewBox="0 0 24 24" fill="none" style="stroke:var(--tx-light)" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg></div>
+        </div>
+        <div class="stat-banner">
+          <div class="big">24</div>
+          <div class="lbl">livraisons en cours</div>
+          <span class="trend">+6 vs hier</span>
+        </div>
+        <div class="metric-grid">
+          <div class="metric-card"><div class="val">18</div><div class="lbl">livreurs actifs</div></div>
+          <div class="metric-card"><div class="val">22 min</div><div class="lbl">temps moyen</div></div>
+          <div class="metric-card"><div class="val">96%</div><div class="lbl">satisfaction</div></div>
+          <div class="metric-card"><div class="val">54</div><div class="lbl">courses / jour</div></div>
+        </div>
+        <div>
+          <div class="order-row"><span>#FY-3042 — Zone du Bois</span><span class="pill en-cours">en cours</span></div>
+          <div class="order-row"><span>#FY-3038 — Ouaga 2000</span><span class="pill livre">livré</span></div>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+
+</body>
+</html>

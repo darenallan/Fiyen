@@ -5,20 +5,31 @@ import { ChatMasque } from './ChatMasque';
 import { Marque } from './Marque';
 import { NavBas, type Onglet } from './composants/NavBas';
 import { SqueletteCourse, SqueletteEtapes } from './composants/Squelette';
-import { IconeAlerte, IconeColis, IconeMoto, IconeVerrou } from './composants/Icones';
+import { Route } from './composants/Route';
+import {
+  IconeAlerte,
+  IconeCheck,
+  IconeColis,
+  IconeMaison,
+  IconeMoto,
+  IconeProfil,
+  IconeVerrou,
+} from './composants/Icones';
 
 /** Rafraîchissement lent : le statut évolue à l'échelle de la minute. */
 const INTERVALLE_RAFRAICHISSEMENT_MS = 20000;
 
 const EN_LIVRAISON: StatutCourse[] = ['assignee', 'recuperee', 'en_route'];
 
-/** Étapes visibles par le client, dans l'ordre du parcours réel du colis. */
-const ETAPES: { statut: StatutCourse; libelle: string }[] = [
-  { statut: 'en_attente', libelle: 'Commande reçue' },
-  { statut: 'assignee', libelle: 'Livreur assigné' },
-  { statut: 'recuperee', libelle: 'Colis récupéré' },
-  { statut: 'en_route', libelle: 'En route vers vous' },
-  { statut: 'livree', libelle: 'Livré' },
+/** Étapes visibles par le client, dans l'ordre du parcours réel du colis.
+ *  Chaque étape porte une icône : sur une liste de cinq lignes, un pictogramme
+ *  se repère bien plus vite qu'un libellé lu de bout en bout. */
+const ETAPES: { statut: StatutCourse; libelle: string; Icone: typeof IconeColis }[] = [
+  { statut: 'en_attente', libelle: 'Commande reçue', Icone: IconeCheck },
+  { statut: 'assignee', libelle: 'Livreur assigné', Icone: IconeProfil },
+  { statut: 'recuperee', libelle: 'Colis récupéré', Icone: IconeColis },
+  { statut: 'en_route', libelle: 'En route vers vous', Icone: IconeMoto },
+  { statut: 'livree', libelle: 'Livré', Icone: IconeMaison },
 ];
 
 const TITRES: Record<StatutCourse, string> = {
@@ -57,27 +68,40 @@ function libelleBadge(statut: StatutCourse): { texte: string; classe: string } {
   return { texte: 'En cours', classe: 'actif' };
 }
 
-function Etapes({ statut }: { statut: StatutCourse }) {
-  if (statut === 'annulee') return null;
-  const indexCourant = ETAPES.findIndex((e) => e.statut === statut);
+function Etapes({ course }: { course: Course }) {
+  if (course.statut === 'annulee') return null;
+  const indexCourant = ETAPES.findIndex((e) => e.statut === course.statut);
+
+  const heure = new Date(course.updated_at).toLocaleTimeString('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
   return (
     <div className="etapes">
       {ETAPES.map((etape, i) => {
         const faite = i < indexCourant;
         const courante = i === indexCourant;
+        const { Icone } = etape;
         return (
           <div
             key={etape.statut}
-            className={`etape-ligne ${faite ? 'faite' : ''} ${courante ? 'courante' : ''}`}
+            className={`etape-ligne ${faite ? 'faite' : ''} ${courante ? 'courante' : ''} ${
+              !faite && !courante ? 'a-venir' : ''
+            }`}
           >
-            <div className="etape-piste">
-              <span className="etape-point" />
-              {i < ETAPES.length - 1 && <span className="etape-barre" />}
-            </div>
-            <div className="etape-libelle">
-              {etape.libelle}
-              {courante && <span className="sr-only"> — étape en cours</span>}
+            <span className="etape-pastille">
+              <Icone className="etape-icone" />
+            </span>
+            <div>
+              <div className="etape-libelle">
+                {etape.libelle}
+                {courante && <span className="sr-only"> — étape en cours</span>}
+              </div>
+              {/* Seul l'horodatage de la dernière transition est connu : la base
+                  ne conserve pas la date de chaque étape. On ne l'affiche donc
+                  que sur l'étape courante, plutôt que d'en inventer. */}
+              {courante && <div className="etape-meta">Mis à jour à {heure}</div>}
             </div>
           </div>
         );
@@ -191,6 +215,7 @@ export function EcranClient({ onDeconnexion }: { onDeconnexion: () => void }) {
 
                   {courseActive.statut !== 'annulee' && (
                     <>
+                      <Route progression={progression(courseActive.statut)} />
                       <div className="heros-progres">
                         <span style={{ width: `${progression(courseActive.statut)}%` }} />
                       </div>
@@ -208,7 +233,7 @@ export function EcranClient({ onDeconnexion }: { onDeconnexion: () => void }) {
 
                 <div className="carte">
                   <h2 style={{ marginBottom: 18 }}>Progression</h2>
-                  <Etapes statut={courseActive.statut} />
+                  <Etapes course={courseActive} />
                 </div>
 
                 {suiviPossible && <CarteSuivi courseId={courseActive.id} />}

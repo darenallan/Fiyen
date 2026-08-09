@@ -70,3 +70,29 @@ export function IconeVerrou({ className = 'icone' }: Props) {
     </svg>
   );
 }
+
+export function IconeCheck({ className = 'icone' }: Props) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m5 12.5 4.5 4.5L19 7" />
+    </svg>
+  );
+}
+
+export function IconeMaison({ className = 'icone' }: Props) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z" />
+      <path d="M9.5 21v-6h5v6" />
+    </svg>
+  );
+}
+
+export function IconeHorloge({ className = 'icone' }: Props) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5.5l3.5 2" />
+    </svg>
+  );
+}

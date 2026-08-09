@@ -6,8 +6,8 @@
 .barre-laterale {
   width: 236px;
   flex-shrink: 0;
-  border-right: 1px solid var(--bordure);
-  background: var(--surface);
+  border-right: 1px solid var(--creme-2);
+  background: var(--creme);
   padding: 26px 18px 22px;
   display: flex;
   flex-direction: column;
@@ -31,7 +31,7 @@
 
 .barre-laterale nav a {
   position: relative;
-  color: var(--texte-2);
+  color: var(--tx-clair-muet);
   text-decoration: none;
   padding: 11px 14px;
   border-radius: var(--r-sm);
@@ -44,13 +44,13 @@
 }
 
 .barre-laterale nav a:hover {
-  color: var(--texte);
-  background: var(--surface-douce);
+  color: var(--tx-clair);
+  background: var(--creme-2);
 }
 
 .barre-laterale nav a.actif {
-  color: var(--primary);
-  background: var(--primary-doux);
+  color: var(--vert);
+  background: var(--or-halo-doux);
 }
 
 /* Liseré cuivré : marque la page courante sans recourir à la seule couleur. */
@@ -63,7 +63,7 @@
   width: 3px;
   height: 60%;
   border-radius: 0 3px 3px 0;
-  background: var(--primary);
+  background: var(--or);
 }
 
 .contenu {
@@ -82,7 +82,7 @@
     height: auto;
     position: static;
     border-right: none;
-    border-bottom: 1px solid var(--bordure);
+    border-bottom: 1px solid var(--creme-2);
     padding: 18px 16px;
   }
 

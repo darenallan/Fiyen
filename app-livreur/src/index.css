@@ -1,111 +1,102 @@
 /* ==========================================================================
-   FIYEN DELIVERY — app livreur
-   Jetons identiques à app-client/src/index.css, qui fait référence. Recopiés
-   plutôt que partagés via un paquet (projets Vite indépendants) : toute
-   évolution de la charte doit y être répercutée, ainsi que dans
-   app-livreur-mobile/src/theme.ts.
+   FIYEN — app livreur
+   Direction : vert forêt & moutarde, registre chaleureux-populaire, avec
+   brillance. Reprise de la maquette `fiyen-v3-vert-moutarde.html`.
 
-   Continuité de marque : le noir #1A1A1A devient la couleur de texte, et l'or
-   cuivré devient l'accent — l'identité survit au passage en clair.
-   Tous les couples texte/fond sont vérifiés >= 4,5:1 (WCAG AA).
+   Jetons identiques à `app-client/src/index.css`, qui fait référence.
    ========================================================================== */
 
+/* Polices auto-hébergées : sur un réseau mobile instable, dépendre d'un CDN
+   ajoute un aller-retour qui retarde le premier rendu. */
 @font-face {
-  font-family: 'Oswald';
-  src: url('./polices/oswald-variable.woff2') format('woff2-variations');
-  font-weight: 200 700;
-  font-style: normal;
+  font-family: 'Baloo 2';
+  src: url('./polices/baloo2-variable.woff2') format('woff2-variations');
+  font-weight: 400 800;
   font-display: swap;
 }
-
 @font-face {
-  font-family: 'Montserrat';
-  src: url('./polices/montserrat-variable.woff2') format('woff2-variations');
+  font-family: 'Work Sans';
+  src: url('./polices/work-sans-variable.woff2') format('woff2-variations');
   font-weight: 100 900;
-  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Mono';
+  src: url('./polices/space-mono-400.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Mono';
+  src: url('./polices/space-mono-700.woff2') format('woff2');
+  font-weight: 700;
   font-display: swap;
 }
 
 :root {
-  /* --- Couleurs de marque ---------------------------------------------- */
-  /* Terracotta : chaleur et énergie, sans être le rouge DoorDash ni le jaune
-     Glovo. `primary` tient 4,98:1 avec du blanc ; `primaryVif` est plus lumineux
-     mais réservé aux aplats décoratifs (dégradés, illustrations), jamais au
-     texte. */
-  --primary: #c4451a;
-  --primary-vif: #e85d2a;
-  --primary-sombre: #a03714;
-  --primary-doux: #fdefe9;
+  /* --- Verts (surfaces sombres) ---------------------------------------- */
+  --vert: #16332a;
+  --vert-2: #1e4235;
+  --vert-3: #2c5646;
+  --vert-nuit: #0e1f19;
 
-  /* Sarcelle profond : contraste complémentaire, registre « confiance/suivi ». */
-  --secondary: #116e68;
-  --secondary-doux: #e6f4f2;
+  /* --- Crèmes (surfaces claires) --------------------------------------- */
+  --creme: #f5efe1;
+  --creme-2: #eae0c6;
 
-  /* Ambre : héritier direct de l'or cuivré. Réservé à ce qui doit attirer
-     l'œil — direct, promotions, éléments vivants. */
-  --accent: #e8a317;
-  --accent-doux: #fdf3e0;
+  /* --- Moutarde ---------------------------------------------------------
+     Couleur de **surface** : boutons, pastilles, pilules. Sur crème elle ne
+     tient que 1,91:1 — ne jamais l'utiliser comme texte sur fond clair. */
+  --or: #e0a526;
+  --or-profond: #b37e1a;
+  --or-halo: rgba(224, 165, 38, 0.4);
+  --or-halo-doux: rgba(224, 165, 38, 0.18);
 
-  /* --- Surfaces --------------------------------------------------------- */
-  /* Fond légèrement chaud plutôt que gris froid : cohérent avec la terracotta. */
-  --fond: #fbf7f2;
-  --surface: #ffffff;
-  --surface-douce: #f6f1ea;
+  /* --- Accents ---------------------------------------------------------- */
+  --rust: #d9581f; /* surface uniquement */
+  --rust-texte: #f0834e; /* variante lisible sur vert : 5,23:1 */
+  --succes: #4f7a5e;
+  --succes-texte: #3b6349; /* variante lisible sur crème : 5,97:1 */
+  --succes-fond: rgba(107, 143, 94, 0.18);
 
   /* --- Texte ------------------------------------------------------------ */
-  --texte: #1a1a1a;
-  --texte-2: #57504b;
-  --texte-muet: #7c736c;
-  --sur-couleur: #ffffff;
+  --tx-sombre: #f5efe1; /* sur surfaces vertes */
+  --tx-sombre-muet: #a9bdb0;
+  --tx-clair: #16332a; /* sur surfaces crème */
+  --tx-clair-muet: #55605a; /* éclairci depuis #6E7C74 : 3,82 → 5,71:1 */
+  --or-texte-clair: #8a6114; /* moutarde lisible sur crème : 4,82:1 */
 
-  --bordure: #e3d8cb;
-  --bordure-forte: #cdbfae;
-
-  /* --- Sémantique ------------------------------------------------------- */
-  --succes: #12805a;
-  --succes-doux: #e6f5ef;
-  --warning: #9a5b00;
-  --warning-doux: #fdf1de;
-  --erreur: #c8352f;
-  --erreur-doux: #fdebea;
-  --info: #1d5fd0;
-  --info-doux: #e9f0fd;
-
-  /* --- Rythme d'espacement (échelle 4/8) -------------------------------- */
+  /* --- Rythme ----------------------------------------------------------- */
   --e-1: 4px;
   --e-2: 8px;
   --e-3: 12px;
   --e-4: 16px;
   --e-5: 24px;
   --e-6: 32px;
-  --e-7: 48px;
 
-  --r-sm: 10px;
-  --r-md: 16px;
-  --r-lg: 22px;
+  --r-sm: 14px;
+  --r-md: 18px;
+  --r-lg: 24px;
   --r-pill: 999px;
 
-  /* Ombres douces et colorées : sur fond clair, une ombre grise salit. */
-  --ombre-1: 0 1px 2px rgba(60, 42, 30, 0.06), 0 1px 3px rgba(60, 42, 30, 0.05);
-  --ombre-2: 0 2px 6px rgba(60, 42, 30, 0.07), 0 8px 20px rgba(60, 42, 30, 0.06);
-  --ombre-3: 0 4px 12px rgba(60, 42, 30, 0.1), 0 16px 36px rgba(60, 42, 30, 0.08);
+  --ombre-1: 0 1px 2px rgba(22, 51, 42, 0.06), 0 2px 6px rgba(22, 51, 42, 0.05);
+  --ombre-2: 0 4px 14px rgba(22, 51, 42, 0.09), 0 12px 30px rgba(22, 51, 42, 0.07);
 
-  /* Expo.out : départ franc, arrivée douce — sensation de réactivité. */
   --courbe: cubic-bezier(0.16, 1, 0.3, 1);
   --duree-courte: 160ms;
-  --duree: 240ms;
+  --duree: 260ms;
 
-  --titre: 'Oswald', 'Impact', system-ui, sans-serif;
-  --corps: 'Montserrat', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --titre: 'Baloo 2', system-ui, sans-serif;
+  --corps: 'Work Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'Space Mono', ui-monospace, Consolas, monospace;
 
-  /* Hauteur de la barre de navigation, pour réserver la place en bas de page. */
-  --h-nav: 66px;
+  --h-nav: 68px;
 
   font-family: var(--corps);
   font-size: 16px;
   line-height: 1.55;
-  color: var(--texte);
-  background: var(--fond);
+  color: var(--tx-clair);
+  background: var(--creme);
   -webkit-font-smoothing: antialiased;
   color-scheme: light;
 }
@@ -117,69 +108,76 @@
 
 body {
   margin: 0;
-  background: var(--fond);
+  background: var(--creme);
   min-height: 100vh;
   overscroll-behavior-y: contain;
 }
 
-/* --------------------------------- Titres --------------------------------
-   Les grands titres passent en Montserrat très gras plutôt qu'en capitales
-   condensées : l'Oswald en capitales lit « technique/industriel », alors qu'on
-   vise le registre grand public. Oswald reste sur les petits libellés, où sa
-   condensation apporte du caractère sans alourdir. */
+/* --------------------------------- Titres -------------------------------- */
 
 h1 {
-  font-family: var(--corps);
+  font-family: var(--titre);
   font-weight: 800;
-  font-size: 34px;
-  line-height: 1.08;
-  letter-spacing: -0.022em;
+  font-size: 30px;
+  line-height: 1.1;
   margin: 0;
-  color: var(--texte);
+  color: var(--tx-clair);
 }
 
 h2 {
   font-family: var(--titre);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--texte-muet);
+  font-weight: 700;
+  font-size: 19px;
   margin: 0;
+  color: var(--tx-clair);
 }
 
 h3 {
-  font-family: var(--corps);
+  font-family: var(--titre);
   font-weight: 700;
-  font-size: 19px;
-  letter-spacing: -0.01em;
+  font-size: 16px;
   margin: 0;
-  color: var(--texte);
 }
 
 p {
   margin: 0;
 }
 
+/* Petits libellés en monospace : signature typographique de la direction —
+   dates, compteurs, métadonnées, sur-titres. */
+.mono,
+.meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--tx-clair-muet);
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  display: block;
+}
+
 /* -------------------------------- Marque --------------------------------- */
 
 .marque {
   font-family: var(--titre);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  font-size: 22px;
+  font-weight: 800;
+  font-size: 24px;
   line-height: 1;
-  color: var(--primary);
+  color: var(--vert);
 }
 
 .marque-sous {
-  font-family: var(--corps);
+  font-family: var(--mono);
   font-size: 10px;
-  letter-spacing: 0.38em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--texte-muet);
-  margin-top: 5px;
+  color: var(--tx-clair-muet);
+  margin-top: 4px;
 }
 
 /* -------------------------------- Structure ------------------------------- */
@@ -188,8 +186,6 @@ p {
   max-width: 520px;
   margin: 0 auto;
   padding: var(--e-5) var(--e-4);
-  /* Réserve la hauteur de la barre de navigation : sans cela, la dernière
-     carte reste masquée derrière. */
   padding-bottom: calc(var(--h-nav) + var(--e-6));
   min-height: 100vh;
 }
@@ -202,64 +198,83 @@ p {
 }
 
 .carte {
-  background: var(--surface);
-  border: 1px solid var(--bordure);
+  background: var(--creme);
+  border: 1px solid var(--creme-2);
   border-radius: var(--r-lg);
   padding: var(--e-5);
   margin-bottom: var(--e-4);
-  box-shadow: var(--ombre-1);
 }
 
-/* Héros : bloc coloré pleine largeur. C'est lui qui donne le ton — une carte
-   blanche de plus n'aurait aucune présence. Le texte est en blanc sur le
-   dégradé, dont l'extrémité la plus claire (#E85D2A) tient 3,48:1, suffisant
-   pour du texte large (>= 24px / gras). */
+/* ---------------------------- Carte sombre (héros) ------------------------
+   Le geste central de la direction : un bloc vert forêt posé sur le crème.
+   L'inversion crée la hiérarchie mieux qu'une carte claire de plus. */
 .heros {
   position: relative;
   overflow: hidden;
   border-radius: var(--r-lg);
-  padding: var(--e-5) var(--e-5) var(--e-6);
+  padding: var(--e-5);
   margin-bottom: var(--e-4);
-  background: linear-gradient(145deg, #e85d2a 0%, var(--primary) 52%, #9c3312 100%);
-  color: var(--sur-couleur);
-  box-shadow: 0 8px 28px rgba(196, 69, 26, 0.28);
+  color: var(--tx-sombre);
+  background: radial-gradient(65% 80% at 85% 8%, var(--or-halo) 0%, rgba(224, 165, 38, 0) 55%),
+    var(--vert);
+  box-shadow: var(--ombre-2);
 }
 
-/* Halo lumineux en haut à droite : donne du volume au bloc. */
+/* Balayage lumineux oblique : c'est la « brillance » de la direction. */
 .heros::after {
   content: '';
   position: absolute;
-  top: -60%;
-  right: -20%;
-  width: 78%;
-  height: 170%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.18), transparent 62%);
+  inset: 0;
   pointer-events: none;
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 244, 222, 0.16) 50%, transparent 58%);
 }
 
-.heros > * { position: relative; z-index: 1; }
+.heros > * {
+  position: relative;
+  z-index: 1;
+}
 
-.heros h1 { color: var(--sur-couleur); font-size: 36px; }
+.heros h1 {
+  color: var(--tx-sombre);
+  font-size: 32px;
+}
 
 .heros .sous {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 15px;
+  color: var(--tx-sombre-muet);
+  font-size: 14px;
   margin-top: var(--e-2);
+  line-height: 1.55;
 }
 
-.heros .badge {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.34);
-  color: var(--sur-couleur);
-  backdrop-filter: blur(4px);
+.heros .eyebrow {
+  color: var(--or);
+  margin-bottom: var(--e-3);
 }
 
-/* Barre de progression du héros : traduit l'avancement en une lecture unique. */
+.heros .mono {
+  color: var(--tx-sombre-muet);
+}
+
+/* Badge d'angle, comme l'ETA de la maquette. */
+.heros-badge {
+  position: absolute;
+  top: var(--e-4);
+  right: var(--e-4);
+  z-index: 2;
+  background: var(--or);
+  color: var(--vert);
+  font-family: var(--titre);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 5px 13px;
+  border-radius: var(--r-pill);
+  box-shadow: 0 0 18px 2px var(--or-halo);
+}
+
 .heros-progres {
   height: 6px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.26);
+  border-radius: var(--r-pill);
+  background: rgba(245, 239, 225, 0.2);
   overflow: hidden;
   margin-top: var(--e-5);
 }
@@ -267,84 +282,90 @@ p {
 .heros-progres span {
   display: block;
   height: 100%;
-  border-radius: 999px;
-  background: #fff;
-  /* L'animation part de la valeur précédente : la progression se voit. */
+  border-radius: var(--r-pill);
+  background: var(--or);
+  box-shadow: 0 0 12px 1px var(--or-halo);
   transition: width 900ms var(--courbe);
 }
 
 .heros-etape {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.88);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--tx-sombre-muet);
   margin-top: var(--e-2);
 }
 
-/* Trajet posé sur le héros : fond translucide plutôt qu'une carte séparée. */
 .heros .trajet {
-  background: rgba(255, 255, 255, 0.13);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(245, 239, 225, 0.08);
+  border: 1px solid rgba(245, 239, 225, 0.14);
   border-radius: var(--r-md);
   padding: var(--e-4);
-  margin-top: var(--e-5);
+  margin-top: var(--e-4);
 }
 
-.heros .trajet-marque,
-/* Sélecteur aligné sur celui de la règle générale (`:last-child`), sinon
-   cette dernière l'emporte en spécificité et le repère B se retrouve en
-   terracotta sur terracotta — donc invisible. */
+.heros .trajet-marque {
+  background: var(--or);
+  color: var(--vert);
+}
+
 .heros .trajet-point:last-child .trajet-marque {
-  background: rgba(255, 255, 255, 0.94);
-  color: var(--primary);
+  background: var(--creme-2);
+  color: var(--vert);
 }
 
-.heros .trajet-adresse { color: var(--sur-couleur); }
-.heros .muet { color: rgba(255, 255, 255, 0.72); }
+.heros .trajet-adresse {
+  color: var(--tx-sombre);
+}
+
+.heros .muet {
+  color: var(--tx-sombre-muet);
+}
 
 /* --------------------------------- Champs -------------------------------- */
 
 label {
   display: block;
-  font-size: 12px;
-  letter-spacing: 0.06em;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  font-weight: 600;
-  color: var(--texte-2);
+  color: var(--tx-clair-muet);
   margin-bottom: var(--e-2);
 }
 
 input {
   font: inherit;
+  font-family: var(--corps);
   width: 100%;
   padding: 14px var(--e-4);
-  border: 1.5px solid var(--bordure);
+  border: 1.5px solid var(--creme-2);
   border-radius: var(--r-sm);
-  background: var(--surface);
-  color: var(--texte);
+  background: #fffdf7;
+  color: var(--tx-clair);
   transition: border-color var(--duree-courte) var(--courbe),
     box-shadow var(--duree-courte) var(--courbe);
 }
 
 input::placeholder {
-  color: var(--texte-muet);
+  color: var(--tx-clair-muet);
 }
 
 input:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-doux);
+  border-color: var(--or);
+  box-shadow: 0 0 0 4px var(--or-halo-doux);
 }
 
 /* -------------------------------- Boutons -------------------------------- */
 
 button {
+  position: relative;
+  overflow: hidden;
   font-family: var(--titre);
   font-size: 15px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-weight: 700;
   cursor: pointer;
   width: 100%;
   /* 52px : cible tactile confortable, au-delà du minimum de 44px */
@@ -352,17 +373,25 @@ button {
   padding: 14px var(--e-5);
   border: none;
   border-radius: var(--r-sm);
-  background: var(--primary);
-  color: var(--sur-couleur);
-  box-shadow: var(--ombre-1);
+  background: var(--or);
+  color: var(--vert);
+  box-shadow: 0 0 22px 2px var(--or-halo);
   transition: transform var(--duree-courte) var(--courbe),
-    background var(--duree-courte) var(--courbe),
-    box-shadow var(--duree-courte) var(--courbe);
+    filter var(--duree-courte) var(--courbe), box-shadow var(--duree-courte) var(--courbe);
+}
+
+/* Même balayage lumineux que sur les surfaces sombres. */
+button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.35) 48%, transparent 66%);
 }
 
 button:hover:not(:disabled) {
-  background: var(--primary-sombre);
-  box-shadow: var(--ombre-2);
+  filter: brightness(1.06);
+  box-shadow: 0 0 30px 4px var(--or-halo);
 }
 
 button:active:not(:disabled) {
@@ -370,77 +399,122 @@ button:active:not(:disabled) {
 }
 
 button:focus-visible {
-  outline: 3px solid var(--accent);
+  outline: 3px solid var(--vert);
   outline-offset: 2px;
 }
 
 button:disabled {
-  opacity: 0.45;
+  /* Fond neutre plutôt qu'une opacité globale : à 45 % d'opacité le libellé
+     devenait illisible, et l'utilisateur ne pouvait plus lire pourquoi
+     l'action est indisponible. */
+  background: var(--creme-2);
+  color: var(--tx-clair-muet);
   cursor: not-allowed;
   box-shadow: none;
 }
 
+button:disabled::after {
+  display: none;
+}
+
 button.contour {
-  background: var(--surface);
-  border: 1.5px solid var(--bordure-forte);
-  color: var(--texte);
+  background: transparent;
+  border: 1.5px solid var(--creme-2);
+  color: var(--tx-clair);
   box-shadow: none;
 }
 
+button.contour::after {
+  display: none;
+}
+
 button.contour:hover:not(:disabled) {
-  background: var(--primary-doux);
-  border-color: var(--primary);
-  color: var(--primary);
+  background: var(--creme-2);
+  filter: none;
   box-shadow: none;
 }
 
 button.discret {
   width: auto;
-  min-height: 40px;
+  min-height: 38px;
   padding: var(--e-2) var(--e-4);
-  font-size: 12px;
+  font-size: 13px;
 }
 
-/* --------------------------------- Badges -------------------------------- */
+/* Bouton rond d'en-tête, comme dans la maquette. */
+.icone-ronde {
+  width: 38px;
+  height: 38px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--creme-2);
+  color: var(--tx-clair);
+  box-shadow: none;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.icone-ronde::after {
+  display: none;
+}
+
+.icone-ronde:hover:not(:disabled) {
+  background: var(--or);
+  filter: none;
+  box-shadow: none;
+}
+
+.icone-ronde svg {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* --------------------------------- Pilules -------------------------------- */
 
 .badge {
   display: inline-flex;
   align-items: center;
   gap: var(--e-2);
-  padding: 6px 13px;
+  padding: 5px 12px;
   border-radius: var(--r-pill);
-  font-family: var(--titre);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  background: var(--surface-douce);
-  color: var(--texte-2);
-  border: 1px solid var(--bordure);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  background: var(--creme-2);
+  color: var(--tx-clair-muet);
 }
 
 .badge.actif {
-  background: var(--accent-doux);
-  color: var(--warning);
-  border-color: #f3ddb2;
+  background: var(--or);
+  color: var(--vert);
 }
 
 .badge.succes {
-  background: var(--succes-doux);
-  color: var(--succes);
-  border-color: #bfe4d6;
-}
-
-.badge.info {
-  background: var(--info-doux);
-  color: var(--info);
-  border-color: #c5d8fa;
+  background: var(--succes-fond);
+  color: var(--succes-texte);
 }
 
 .badge.erreur {
-  background: var(--erreur-doux);
-  color: var(--erreur);
-  border-color: #f6c9c7;
+  background: rgba(217, 88, 31, 0.15);
+  color: #a53f13;
+}
+
+/* Dans un héros, les pilules s'inversent. */
+.heros .badge {
+  background: rgba(245, 239, 225, 0.14);
+  color: var(--tx-sombre);
+}
+
+.heros .badge.actif {
+  background: var(--or);
+  color: var(--vert);
 }
 
 .pastille {
@@ -452,18 +526,16 @@ button.discret {
 }
 
 .pastille.vivante {
-  animation: pulsation 2s var(--courbe) infinite;
+  animation: pulsation 1.8s ease-in-out infinite;
 }
 
 @keyframes pulsation {
   0%,
   100% {
     opacity: 1;
-    transform: scale(1);
   }
   50% {
-    opacity: 0.4;
-    transform: scale(0.75);
+    opacity: 0.35;
   }
 }
 
@@ -475,77 +547,89 @@ button.discret {
 }
 
 .etape-ligne {
-  display: grid;
-  grid-template-columns: 26px 1fr;
-  gap: var(--e-3);
-  align-items: stretch;
-}
-
-.etape-piste {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  gap: var(--e-3);
+  position: relative;
+  padding-bottom: 22px;
 }
 
-.etape-point {
-  width: 16px;
-  height: 16px;
+.etape-ligne:last-child {
+  padding-bottom: 0;
+}
+
+/* Trait de liaison tracé en ::before, comme dans la maquette. */
+.etape-ligne::before {
+  content: '';
+  position: absolute;
+  left: 13px;
+  top: 30px;
+  bottom: 0;
+  width: 2px;
+  background: var(--creme-2);
+}
+
+.etape-ligne:last-child::before {
+  display: none;
+}
+
+.etape-pastille {
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  border: 2.5px solid var(--bordure-forte);
-  background: var(--surface);
+  display: grid;
+  place-items: center;
   flex-shrink: 0;
-  margin-top: 3px;
-  transition: background var(--duree) var(--courbe), border-color var(--duree) var(--courbe);
+  z-index: 1;
+  background: var(--creme-2);
+  color: var(--tx-clair-muet);
+  transition: background var(--duree) var(--courbe), color var(--duree) var(--courbe),
+    box-shadow var(--duree) var(--courbe);
 }
 
-.etape-ligne.faite .etape-point {
-  background: var(--succes);
-  border-color: var(--succes);
+.etape-icone {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-/* L'étape courante ne se distingue pas que par la couleur : elle porte aussi
-   un halo et un libellé en gras. */
-.etape-ligne.courante .etape-point {
-  border-color: var(--primary);
-  background: var(--surface);
-  box-shadow: 0 0 0 5px var(--primary-doux);
+.etape-ligne.faite .etape-pastille {
+  background: var(--or);
+  color: var(--vert);
 }
 
-.etape-barre {
-  width: 2.5px;
-  flex: 1;
-  min-height: 26px;
-  background: var(--bordure);
-  margin: var(--e-1) 0;
-  border-radius: 2px;
-  transition: background var(--duree) var(--courbe);
-}
-
-.etape-ligne.faite .etape-barre {
-  background: var(--succes);
+/* L'étape courante porte un halo ET un libellé en gras : l'information ne
+   repose jamais sur la seule couleur. */
+.etape-ligne.courante .etape-pastille {
+  background: var(--or);
+  color: var(--vert);
+  box-shadow: 0 0 0 4px var(--or-halo);
 }
 
 .etape-libelle {
-  font-family: var(--titre);
-  font-size: 13px;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--texte-muet);
-  padding-bottom: var(--e-5);
-  transition: color var(--duree) var(--courbe);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--tx-clair);
+  line-height: 1.35;
 }
 
-.etape-ligne.faite .etape-libelle {
-  color: var(--texte-2);
+.etape-ligne.a-venir .etape-libelle {
+  color: var(--tx-clair-muet);
+  font-weight: 500;
 }
 
 .etape-ligne.courante .etape-libelle {
-  color: var(--primary);
   font-weight: 700;
 }
 
-.etape-ligne:last-child .etape-libelle {
-  padding-bottom: 0;
+.etape-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--tx-clair-muet);
+  margin-top: 2px;
 }
 
 /* --------------------------------- Trajet -------------------------------- */
@@ -567,64 +651,106 @@ button.discret {
   font-family: var(--titre);
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--sur-couleur);
-  background: var(--secondary);
-  border-radius: 8px;
+  color: var(--creme);
+  background: var(--vert);
+  border-radius: 9px;
   width: 28px;
   height: 28px;
   display: grid;
   place-items: center;
 }
 
-.trajet-point:last-child .trajet-marque {
-  background: var(--primary);
+.trajet-adresse {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tx-clair);
+  padding-top: 3px;
 }
 
-.trajet-adresse {
-  font-size: 15px;
-  color: var(--texte);
-  padding-top: 4px;
+.trajet .muet {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 400;
+  color: var(--tx-clair-muet);
+}
+
+/* --------------------------- Chiffres en bandeau -------------------------- */
+
+.puces-stats {
+  display: flex;
+  gap: var(--e-2);
+}
+
+.puce-stat {
+  flex: 1;
+  background: var(--creme-2);
+  border-radius: var(--r-sm);
+  padding: var(--e-3) var(--e-2);
+  text-align: center;
+}
+
+.puce-stat .val {
+  font-family: var(--titre);
+  font-weight: 700;
+  font-size: 19px;
+  color: var(--tx-clair);
+}
+
+.puce-stat .lbl {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tx-clair-muet);
+  margin-top: 2px;
 }
 
 /* ---------------------------------- Carte --------------------------------- */
 
 .carte-suivi {
-  height: 300px;
+  height: 320px;
   border-radius: var(--r-md);
   overflow: hidden;
-  border: 1px solid var(--bordure);
+  border: 1px solid var(--creme-2);
 }
 
 .leaflet-popup-content-wrapper,
 .leaflet-popup-tip {
-  background: var(--surface);
-  color: var(--texte);
+  background: var(--creme);
+  color: var(--tx-clair);
 }
 
 .leaflet-control-attribution {
-  background: rgba(255, 255, 255, 0.86) !important;
+  background: rgba(245, 239, 225, 0.88) !important;
   font-size: 10px !important;
 }
 
-/* Marqueur du livreur : pastille terracotta à halo pulsant, repérable sur une
-   carte claire sans se confondre avec les routes. */
+/* Marqueur du livreur : pastille moutarde à halo pulsant. */
 .halo-livreur {
   display: block;
   width: 14px;
   height: 14px;
   margin: 3px;
   border-radius: 50%;
-  background: var(--primary);
-  border: 2.5px solid #fff;
-  box-shadow: 0 0 0 0 rgba(196, 69, 26, 0.45), 0 1px 4px rgba(0, 0, 0, 0.25);
+  background: var(--or);
+  border: 2.5px solid var(--vert);
+  box-shadow: 0 0 10px 2px var(--or-halo);
   animation: halo 2.2s var(--courbe) infinite;
 }
 
 @keyframes halo {
-  0% { box-shadow: 0 0 0 0 rgba(196, 69, 26, 0.42), 0 1px 4px rgba(0,0,0,.25); }
-  70% { box-shadow: 0 0 0 15px rgba(196, 69, 26, 0), 0 1px 4px rgba(0,0,0,.25); }
-  100% { box-shadow: 0 0 0 0 rgba(196, 69, 26, 0), 0 1px 4px rgba(0,0,0,.25); }
+  0% {
+    box-shadow: 0 0 0 0 var(--or-halo), 0 0 10px 2px var(--or-halo);
+  }
+  70% {
+    box-shadow: 0 0 0 15px rgba(224, 165, 38, 0), 0 0 10px 2px var(--or-halo);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(224, 165, 38, 0), 0 0 10px 2px var(--or-halo);
+  }
 }
 
 /* -------------------------------- Messages -------------------------------- */
@@ -650,16 +776,15 @@ button.discret {
 
 .bulle.moi {
   align-self: flex-end;
-  background: var(--primary);
-  color: var(--sur-couleur);
+  background: var(--vert);
+  color: var(--tx-sombre);
   border-bottom-right-radius: 5px;
 }
 
 .bulle.lui {
   align-self: flex-start;
-  background: var(--surface-douce);
-  color: var(--texte);
-  border: 1px solid var(--bordure);
+  background: var(--creme-2);
+  color: var(--tx-clair);
   border-bottom-left-radius: 5px;
 }
 
@@ -696,9 +821,7 @@ button.discret {
   height: var(--h-nav);
   /* Respecte la zone de geste des téléphones sans bouton physique. */
   padding-bottom: env(safe-area-inset-bottom, 0);
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(12px);
-  border-top: 1px solid var(--bordure);
+  background: var(--vert);
   display: flex;
   justify-content: space-around;
   align-items: stretch;
@@ -706,12 +829,12 @@ button.discret {
 }
 
 .nav-bas button {
+  position: relative;
   width: auto;
   flex: 1;
   min-height: 0;
   padding: var(--e-2) var(--e-1);
   background: none;
-  border: none;
   border-radius: 0;
   box-shadow: none;
   display: flex;
@@ -719,33 +842,25 @@ button.discret {
   align-items: center;
   justify-content: center;
   gap: 3px;
-  color: var(--texte-muet);
+  color: var(--tx-sombre-muet);
   font-family: var(--corps);
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: none;
-  transition: color var(--duree-courte) var(--courbe);
+}
+
+.nav-bas button::after {
+  display: none;
 }
 
 .nav-bas button:hover:not(:disabled) {
   background: none;
+  filter: none;
   box-shadow: none;
-  color: var(--texte-2);
+  color: var(--tx-sombre);
 }
 
 .nav-bas button.actif {
-  color: var(--primary);
-}
-
-.nav-bas .icone {
-  width: 23px;
-  height: 23px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.9;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  color: var(--or);
 }
 
 /* L'onglet actif est signalé par un trait, pas seulement par la couleur. */
@@ -756,14 +871,20 @@ button.discret {
   width: 30px;
   height: 3px;
   border-radius: 0 0 3px 3px;
-  background: var(--primary);
+  background: var(--or);
+  box-shadow: 0 0 12px 1px var(--or-halo);
 }
 
-.nav-bas button {
-  position: relative;
+.nav-bas .icone {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-/* Pastille de notification sur un onglet. */
 .nav-point {
   position: absolute;
   top: 8px;
@@ -772,21 +893,16 @@ button.discret {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--accent);
-  border: 2px solid var(--surface);
+  background: var(--or);
+  border: 2px solid var(--vert);
 }
 
 /* ------------------------------- Chargement ------------------------------- */
 
-/* Squelettes : réservent la place définitive du contenu, ce qui évite le
-   décalage de mise en page quand les données arrivent. */
+/* Les squelettes reproduisent la forme du contenu à venir : la mise en page ne
+   se décale pas à l'arrivée des données. */
 .squelette {
-  background: linear-gradient(
-    90deg,
-    var(--surface-douce) 25%,
-    #efe7dd 37%,
-    var(--surface-douce) 63%
-  );
+  background: linear-gradient(90deg, var(--creme-2) 25%, #f0e7d2 37%, var(--creme-2) 63%);
   background-size: 400% 100%;
   animation: glissement 1.3s ease-in-out infinite;
   border-radius: var(--r-sm);
@@ -820,8 +936,8 @@ button.discret {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--primary-doux);
-  color: var(--primary);
+  background: var(--or-halo-doux);
+  color: var(--or-texte-clair);
 }
 
 .etat-vide .illus svg {
@@ -834,7 +950,38 @@ button.discret {
   stroke-linejoin: round;
 }
 
-/* Jeton d'illustration : porte une icône dans un cercle teinté. */
+/* -------------------------------- Divers --------------------------------- */
+
+.attenue {
+  color: var(--tx-clair-muet);
+  font-size: 14px;
+}
+
+.muet {
+  color: var(--tx-clair-muet);
+  font-size: 13px;
+}
+
+.erreur {
+  color: #a53f13;
+  font-size: 14px;
+  margin-top: var(--e-3);
+}
+
+/* Bandeau d'erreur : l'icône double l'information portée par la couleur. */
+.bandeau-erreur {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  background: rgba(217, 88, 31, 0.12);
+  border: 1px solid rgba(217, 88, 31, 0.28);
+  color: #a53f13;
+  border-radius: var(--r-sm);
+  padding: var(--e-3) var(--e-4);
+  font-size: 14px;
+  margin-bottom: var(--e-4);
+}
+
 .jeton-info {
   flex-shrink: 0;
   width: 40px;
@@ -842,18 +989,8 @@ button.discret {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--secondary-doux);
-  color: var(--secondary);
-}
-
-.jeton-info svg {
-  width: 20px;
-  height: 20px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  background: var(--vert);
+  color: var(--or);
 }
 
 .icone-inline {
@@ -867,8 +1004,17 @@ button.discret {
   stroke-linejoin: round;
 }
 
-/* Visible des seuls lecteurs d'écran : complète une information que la couleur
-   ou la position transmet visuellement. */
+.jeton-info svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Visible des seuls lecteurs d'écran. */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -881,43 +1027,12 @@ button.discret {
   border: 0;
 }
 
-/* -------------------------------- Divers --------------------------------- */
-
-.attenue {
-  color: var(--texte-2);
-  font-size: 14px;
-}
-
-.muet {
-  color: var(--texte-muet);
-  font-size: 13px;
-}
-
-.erreur {
-  color: var(--erreur);
-  font-size: 14px;
-  margin-top: var(--e-3);
-}
-
-/* Bandeau d'erreur : l'icône double l'information portée par la couleur. */
-.bandeau-erreur {
-  display: flex;
-  align-items: center;
-  gap: var(--e-2);
-  background: var(--erreur-doux);
-  border: 1px solid #f6c9c7;
-  color: var(--erreur);
-  border-radius: var(--r-sm);
-  padding: var(--e-3) var(--e-4);
-  font-size: 14px;
-  margin-bottom: var(--e-4);
-}
-
 .apparition {
-  animation: apparition 400ms var(--courbe) both;
+  animation: apparition 480ms var(--courbe) both;
 }
 
-/* Entrée en cascade : chaque bloc arrive après le précédent. */
+/* Entrée en cascade : chaque bloc arrive après le précédent, ce qui guide le
+   regard de haut en bas au lieu de tout révéler d'un coup. */
 .cascade > * {
   animation: apparition 520ms var(--courbe) both;
 }
@@ -931,7 +1046,7 @@ button.discret {
 @keyframes apparition {
   from {
     opacity: 0;
-    transform: translateY(18px) scale(0.985);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
@@ -952,27 +1067,23 @@ button.discret {
 
 /* ======================== Spécifique à l'app livreur ====================== */
 
-/* Ligne d'état du panneau GPS. */
 .ligne-etat {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: var(--e-3) 0;
   font-size: 14px;
-  border-bottom: 1px solid var(--bordure);
+  border-bottom: 1px solid var(--creme-2);
 }
 
-.ligne-etat:last-child {
-  border-bottom: none;
-}
+.ligne-etat:last-child { border-bottom: none; }
 
 .ligne-etat strong {
   font-family: var(--titre);
-  font-size: 18px;
-  letter-spacing: 0.02em;
+  font-size: 19px;
+  color: var(--tx-clair);
 }
 
-/* Repères A/B du trajet, dans la liste des courses. */
 .etape {
   display: grid;
   grid-template-columns: 28px 1fr;
@@ -984,50 +1095,39 @@ button.discret {
   font-family: var(--titre);
   font-size: 12px;
   font-weight: 700;
-  color: var(--sur-couleur);
-  background: var(--secondary);
-  border-radius: 8px;
+  color: var(--creme);
+  background: var(--vert);
+  border-radius: 9px;
   width: 28px;
   height: 28px;
   display: grid;
   place-items: center;
 }
 
-.etape:last-child .puce {
-  background: var(--primary);
-}
+.etape:last-child .puce { background: var(--or); color: var(--vert); }
 
 .course {
   padding-bottom: var(--e-5);
   margin-bottom: var(--e-5);
-  border-bottom: 1px solid var(--bordure);
+  border-bottom: 1px solid var(--creme-2);
 }
 
-.course:last-child {
-  padding-bottom: 0;
-  margin-bottom: 0;
-  border-bottom: none;
-}
+.course:last-child { padding-bottom: 0; margin-bottom: 0; border-bottom: none; }
 
 /* Fin de service : action destructive, distincte de l'action principale. */
 button.danger {
-  background: var(--erreur);
-  color: var(--sur-couleur);
+  background: var(--rust);
+  color: var(--creme);
+  box-shadow: 0 0 18px 2px rgba(217, 88, 31, 0.3);
 }
 
-button.danger:hover:not(:disabled) {
-  background: #a82b26;
-}
-
-/* Alias conservés pour ne pas casser le balisage existant. */
-.muted {
-  color: var(--texte-2);
-  font-size: 14px;
-}
-
-/* Hors service : le héros s'éteint. L'absence de couleur porte l'information
-   aussi clairement que le libellé, sans reposer sur elle seule. */
+/* Héros éteint hors service : l'absence de couleur porte l'information autant
+   que le libellé. */
 .heros.heros-sourd {
-  background: linear-gradient(145deg, #6b625b 0%, #4d4640 60%, #3b3530 100%);
-  box-shadow: 0 8px 24px rgba(60, 42, 30, 0.22);
+  background: var(--vert-3);
+  box-shadow: var(--ombre-1);
 }
+
+.heros.heros-sourd::after { display: none; }
+
+.muted { color: var(--tx-clair-muet); font-size: 14px; }

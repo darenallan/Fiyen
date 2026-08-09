@@ -8,23 +8,26 @@ import { StyleSheet } from 'react-native';
  * de marque #1A1A1A reste la couleur de texte.
  */
 export const couleurs = {
-  primary: '#c4451a',
-  primarySombre: '#a03714',
-  primaryDoux: '#fdefe9',
-  secondary: '#116e68',
-  accent: '#e8a317',
+  vert: '#16332a',
+  vert2: '#1e4235',
+  vert3: '#2c5646',
+  creme: '#f5efe1',
+  creme2: '#eae0c6',
+  or: '#e0a526',
+  orProfond: '#b37e1a',
+  rust: '#d9581f',
 
-  fond: '#fbf7f2',
-  panneau: '#ffffff',
-  panneauHaut: '#f6f1ea',
-  bordure: '#e3d8cb',
+  fond: '#f5efe1',
+  panneau: '#f5efe1',
+  panneauHaut: '#eae0c6',
+  bordure: '#eae0c6',
 
-  texte: '#1a1a1a',
-  texteAttenue: '#57504b',
-  texteMuet: '#7c736c',
-  surCouleur: '#ffffff',
-  succes: '#12805a',
-  danger: '#c8352f',
+  texte: '#16332a',
+  texteAttenue: '#55605a',
+  texteMuet: '#55605a',
+  surCouleur: '#f5efe1',
+  succes: '#3b6349',
+  danger: '#a53f13',
 };
 
 export const styles = StyleSheet.create({
@@ -75,7 +78,7 @@ export const styles = StyleSheet.create({
     marginTop: 6,
   },
   bouton: {
-    backgroundColor: couleurs.primary,
+    backgroundColor: couleurs.or,
     borderRadius: 10,
     // cible tactile confortable, utilisable d'une main à l'arrêt
     minHeight: 52,
@@ -84,7 +87,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   boutonTexte: {
-    color: couleurs.surCouleur,
+    color: couleurs.vert,
     fontSize: 15,
     fontWeight: '700',
     letterSpacing: 1.1,
@@ -138,12 +141,12 @@ export function couleurStatut(statut: string, enService = true) {
   switch (statut) {
     case 'dispo':
     case 'livree':
-      return { fond: '#e6f5ef', texte: couleurs.succes };
+      return { fond: 'rgba(107,143,94,0.18)', texte: couleurs.succes };
     case 'en_course':
     case 'assignee':
     case 'recuperee':
     case 'en_route':
-      return { fond: '#fdefe9', texte: couleurs.primary };
+      return { fond: couleurs.or, texte: couleurs.vert };
     default:
       return { fond: couleurs.bordure, texte: couleurs.texteAttenue };
   }

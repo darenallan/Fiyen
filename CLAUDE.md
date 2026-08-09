@@ -110,30 +110,43 @@ Contrôles d'accès (24 garanties couvertes par `test-masquage`) : seules les de
 
 ## Système de design
 
-Référence : **`app-client/src/index.css`**. Les jetons sont **recopiés** dans `app-livreur/`, `dashboard/` et `app-livreur-mobile/src/theme.ts` (projets Vite indépendants) — toute évolution doit être répercutée aux quatre endroits. Un workspace npm réglerait cette dette si le projet grandit.
+Direction : **vert forêt & moutarde**, registre chaleureux-populaire, avec brillance.
+Source : la maquette `fiyen-v3-vert-moutarde.html` à la racine, fournie par le client — s'y référer avant toute évolution visuelle.
+
+Référence d'implémentation : **`app-client/src/index.css`**. Les jetons sont **recopiés** dans `app-livreur/`, `dashboard/` et `app-livreur-mobile/src/theme.ts` (projets Vite indépendants) — toute évolution doit être répercutée aux quatre endroits. Un workspace npm réglerait cette dette si le projet grandit.
 
 | Rôle | Couleur |
 | --- | --- |
-| Primary (terracotta) | `#C4451A` — tient 4,98:1 avec du blanc |
-| Secondary (sarcelle) | `#116E68` |
-| Accent (ambre) | `#E8A317` |
-| Fond / Surface | `#FBF7F2` / `#FFFFFF` |
-| Texte | `#1A1A1A` / `#57504B` / `#7C736C` |
-| Sémantique | `#12805A` `#9A5B00` `#C8352F` `#1D5FD0` |
+| Vert forêt (surfaces sombres) | `#16332A`, `#1E4235`, `#2C5646` |
+| Crème (surfaces claires) | `#F5EFE1` / `#EAE0C6` |
+| Moutarde | `#E0A526` — **surface uniquement** |
+| Rust (accent) | `#D9581F` — surface uniquement |
+| Texte sur vert | `#F5EFE1` / `#A9BDB0` |
+| Texte sur crème | `#16332A` / `#55605A` |
 
-`--primary-vif` (`#E85D2A`) est **réservé aux aplats décoratifs**, jamais au texte (3,48:1).
+**Contraintes de contraste à respecter.** Les accords signature passent largement (moutarde sur vert 6,22:1 ; crème sur vert 11,89 ; vert sur moutarde 6,22). Mais trois couleurs de la maquette ne tiennent pas comme **texte** et ont des variantes dérivées :
 
-Typographie **auto-hébergée** (`src/polices/`, 68 Ko) : dépendre d'un CDN de polices ajoute un aller-retour qui retarde le premier rendu sur réseau lent. **Montserrat 800** pour les grands titres, **Oswald** en capitales pour les petits libellés seulement — l'Oswald partout lisait « technique/industriel » plutôt que grand public.
+| N'utiliser comme texte que via | Variante | Ratio |
+| --- | --- | --- |
+| moutarde sur crème (1,91 ✗) | `--or-texte-clair` `#8A6114` | 4,82 |
+| rust sur vert (3,48 ✗) | `--rust-texte` `#F0834E` | 5,23 |
+| muet sur crème (3,82 ✗) | `--tx-clair-muet` `#55605A` | 5,71 |
+| succès sur crème (4,28 ✗) | `--succes-texte` `#3B6349` | 5,97 |
 
-Règles qui tiennent l'ensemble :
+Typographie **auto-hébergée** (`src/polices/`, 132 Ko) : **Baloo 2** (titres, boutons, grands chiffres — ronde et chaleureuse), **Work Sans** (corps), **Space Mono** (sur-titres, horodatages, libellés de statistiques — c'est la signature de la direction). Dépendre d'un CDN ajouterait un aller-retour qui retarde le premier rendu sur réseau lent.
 
-- **Un héros coloré pleine largeur** ouvre chaque écran principal (client, livreur, dashboard). Une carte blanche de plus n'a aucune présence.
+Gestes visuels qui font la direction :
+
+- **Un bloc vert forêt posé sur le crème** ouvre chaque écran principal. L'inversion crée la hiérarchie mieux qu'une carte claire de plus.
+- **Halo moutarde** en radial dans les blocs sombres, et **balayage lumineux oblique** (`linear-gradient(115deg, …)`) sur les surfaces sombres et les boutons — c'est la « brillance » demandée.
 - **Aucun état ne repose sur la seule couleur** : trait sur l'onglet actif, halo + gras sur l'étape en cours, icône sur les bandeaux d'erreur, légende chiffrée sous la barre de répartition.
 - **Icônes en SVG inline**, ni emoji (rendu variable, ne prend pas la couleur du texte) ni librairie.
 - Cartes en tuiles **CARTO light_all**, désaturées — les routes colorées d'OSM concurrenceraient les marqueurs.
-- Animations 160–480 ms, courbe `Expo.out`, neutralisées par `prefers-reduced-motion` sans perte d'information.
+- Animations 160–520 ms, courbe `Expo.out`, entrée en cascade, neutralisées par `prefers-reduced-motion` sans perte d'information.
 
 Navigation basse à 3 onglets sur les deux apps mobiles : Suivi/Commandes/Profil côté client, Service/Courses/Profil côté livreur. **Pas d'onglet « Explorer » ni « Panier »** — voir l'avertissement en tête de fichier.
+
+> La maquette montre un encart livreur avec nom, plaque et **bouton d'appel**, ainsi que des données (ETA, gains du jour, ponctualité) qui n'existent pas dans le produit. Ne pas les reprendre : le bouton d'appel **contredirait la garantie de masquage**, et le reste demanderait des données fictives. Le contact passe par la messagerie masquée.
 
 ## Sécurité (non négociable)
 
@@ -154,7 +167,9 @@ Navigation basse à 3 onglets sur les deux apps mobiles : Suivi/Commandes/Profil
 - Depuis un téléphone, `localhost` ne désigne pas la machine de dev : renseigner l'IP LAN dans `EXPO_PUBLIC_API_URL` et l'ajouter à `CORS_ORIGINS`.
 - Jetons de design dupliqués dans 4 projets (voir ci-dessus).
 - `react-router-dom` (dashboard) remonte des CVE liées au SSR/RSC — sans objet ici, SPA cliente pure.
-- **MCP 21st non installé.** Vérifié plusieurs fois via `claude mcp list`. Pour l'ajouter : `npx @21st-dev/cli@latest init --client claude` avec une clé de 21st.dev/mcp. Le plugin `ui-ux-pro-max`, lui, est disponible et a servi au système de couleurs.
+- **MCP 21st installé, mais compte en offre gratuite : 2 récupérations de code par jour** (`mcp__21st__get_usage`). Les recherches et les aperçus sont gratuits et illimités.
+  - Les composants du catalogue sont en **shadcn/Tailwind**, que ce projet n'utilise pas (CSS + variables custom). Les installer imposerait Tailwind + shadcn : à ne pas faire. **S'en servir comme référence visuelle** — télécharger les `previewUrl` et les regarder — puis adapter au CSS maison.
+  - Le plugin `ui-ux-pro-max` reste utile pour les palettes et les règles UX (neutres chauds, élévation, contraste).
 - Le dépôt n'a que les deux commits d'origine ; tout le travail est en attente de commit.
 
 ## Roadmap

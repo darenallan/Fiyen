@@ -20,7 +20,7 @@
     "android": {
       "package": "bf.fiyen.livreur",
       "adaptiveIcon": {
-        "backgroundColor": "#FBF7F2",
+        "backgroundColor": "#F5EFE1",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -48,6 +48,6 @@
         }
       ]
     ],
-    "backgroundColor": "#FBF7F2"
+    "backgroundColor": "#F5EFE1"
   }
 }
