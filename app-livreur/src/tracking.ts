@@ -1,4 +1,4 @@
-import { urlWebSocketPosition } from './api';
+import { urlWebSocketPosition, assurerJetonFrais } from './api';
 
 const CLE_FILE_ATTENTE = 'fiyen_positions_en_attente';
 
@@ -126,7 +126,7 @@ export class TrackingLivreur {
       { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 },
     );
 
-    this.connecter();
+    void this.connecter();
     this.timerEnvoi = window.setInterval(() => this.capturerEtEnvoyer(), INTERVALLE_ENVOI_MS);
     this.notifier();
   }
@@ -155,7 +155,12 @@ export class TrackingLivreur {
     this.notifier();
   }
 
-  private connecter() {
+  private async connecter() {
+    if (!this.actif) return;
+    // Le jeton part dans l'URL du handshake et ne peut pas être rejoué : il
+    // doit être frais *avant* l'ouverture. Sans cela, un livreur en course
+    // depuis plus de 30 minutes verrait sa remontée de position s'arrêter.
+    await assurerJetonFrais();
     if (!this.actif) return;
 
     try {
@@ -187,7 +192,7 @@ export class TrackingLivreur {
 
     this.timerReconnexion = window.setTimeout(() => {
       this.timerReconnexion = null;
-      this.connecter();
+      void this.connecter();
     }, this.delaiReconnexion);
 
     this.delaiReconnexion = Math.min(this.delaiReconnexion * 2, DELAI_RECONNEXION_MAX_MS);

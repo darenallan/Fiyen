@@ -16,7 +16,7 @@ export function Login({ onConnecte }: { onConnecte: () => void }) {
     setErreur(null);
     setEnCours(true);
     try {
-      const { token } = inscription
+      const { token, refresh_token } = inscription
         ? await api.inscription(nom, telephone, motDePasse)
         : await api.login(telephone, motDePasse);
 
@@ -24,7 +24,7 @@ export function Login({ onConnecte }: { onConnecte: () => void }) {
         setErreur("Ce compte n'est pas un compte client.");
         return;
       }
-      setToken(token);
+      setToken(token, refresh_token);
       onConnecte();
     } catch (err) {
       setErreur(err instanceof ApiError ? err.message : 'Connexion impossible');

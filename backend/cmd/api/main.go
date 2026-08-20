@@ -66,6 +66,17 @@ func main() {
 	auth.Post("/register-client", deps.RegisterClient)
 	auth.Post("/login", deps.Login)
 
+	// Le renouvellement a sa propre limite, plus haute : il n'y a rien à
+	// deviner sur un jeton de 256 bits d'aléa, alors qu'un opérateur mobile
+	// burkinabè fait sortir beaucoup d'abonnés derrière la même IP. Une limite
+	// calquée sur celle du login déconnecterait des utilisateurs légitimes.
+	refreshLimiter := limiter.New(limiter.Config{
+		Max:        60,
+		Expiration: time.Minute,
+	})
+	app.Post("/api/auth/refresh", refreshLimiter, deps.Refresh)
+	app.Post("/api/auth/deconnexion", refreshLimiter, deps.Deconnexion)
+
 	// --- API authentifiée ---
 	api := app.Group("/api", middleware.AuthRequis(cfg.JWTSecret))
 

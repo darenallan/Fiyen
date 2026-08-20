@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { api, wsUrl, ApiError } from './client';
+import { api, wsUrl, ApiError, assurerJetonFrais } from './client';
 import type { Livreur } from './types';
 
 /**
@@ -61,7 +61,11 @@ export function useFlotteLive(): EtatFlotte & { rafraichir: () => Promise<void> 
     rafraichir();
     const timer = window.setInterval(rafraichir, INTERVALLE_RAFRAICHISSEMENT_MS);
 
-    function connecter() {
+    async function connecter() {
+      if (!montéRef.current) return;
+      // Le jeton part dans l'URL du handshake et ne peut pas être rejoué :
+      // il doit être frais *avant* l'ouverture, pas rattrapé après.
+      await assurerJetonFrais();
       if (!montéRef.current) return;
 
       let ws: WebSocket;
@@ -115,12 +119,12 @@ export function useFlotteLive(): EtatFlotte & { rafraichir: () => Promise<void> 
       if (!montéRef.current || timerReconnexionRef.current !== null) return;
       timerReconnexionRef.current = window.setTimeout(() => {
         timerReconnexionRef.current = null;
-        connecter();
+        void connecter();
       }, delaiRef.current);
       delaiRef.current = Math.min(delaiRef.current * 2, DELAI_RECONNEXION_MAX_MS);
     }
 
-    connecter();
+    void connecter();
 
     return () => {
       montéRef.current = false;

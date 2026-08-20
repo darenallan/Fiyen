@@ -1292,3 +1292,19 @@ tbody tr:last-child td { border-bottom: none; }
   stroke-linecap: round;
   pointer-events: none;
 }
+
+/* Écran d'attente pendant la reprise de session (renouvellement du jeton).
+   Volontairement sobre : il ne dure qu'un aller-retour réseau, une animation
+   élaborée y serait plus perturbante qu'utile. */
+.chargement-session {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 60vh;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tx-clair-muet);
+}

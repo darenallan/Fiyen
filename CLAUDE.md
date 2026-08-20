@@ -106,7 +106,26 @@ Garantie centrale : aucun numéro réel n'est échangé, et le client ne connaî
 - **Fait, non exploité** : le relais de signaling WebRTC (`offre` / `reponse` / `ice`) est en place et relayé sans être conservé. Il ne manque que la couche voix côté front.
 - **Non fait** : le repli PSTN. `internal/masquage/pstn.go` définit l'interface ; l'implémentation par défaut **échoue explicitement** plutôt que de simuler un numéro — un faux numéro donnerait l'illusion d'un canal de secours. Pour l'activer : brancher Africa's Talking **et vérifier la couverture voix exacte au Burkina Faso**, qui varie selon les pays.
 
-Contrôles d'accès (24 garanties couvertes par `test-masquage`) : seules les deux extrémités de la course accèdent au canal — **la compagnie elle-même en est exclue** ; « introuvable » et « accès refusé » renvoient le même 404 ; l'expiration est revérifiée **à chaque envoi**, pas seulement à la connexion.
+Contrôles d'accès : seules les deux extrémités de la course accèdent au canal — **la compagnie elle-même en est exclue** ; « introuvable » et « accès refusé » renvoient le même 404 ; l'expiration est revérifiée **à chaque envoi**, pas seulement à la connexion ; le rôle de l'expéditeur vient de la session, jamais du message.
+
+### Tests
+
+| | Quoi | Comment |
+| --- | --- | --- |
+| `go test ./...` | 42 tests du protocole | intégration : vraie base, vrai Redis, vraie WebSocket |
+| `node backend/scripts/test-masquage-ui.mjs` | 21 garanties **à l'écran** | Chrome headless, les deux apps, une vraie conversation |
+
+Les tests Go sont des tests **d'intégration**, pas des tests à bouchons : les
+garanties d'accès sont portées par le SQL lui-même, qu'un faux dépôt ne
+prouverait pas. Sans base ni Redis ils s'**ignorent** pour que `go test ./...`
+reste exécutable partout ; `FIYEN_TESTS_INTEGRATION=1` rend cette absence
+fatale — à poser dans la CI, sinon elle passerait au vert sans rien vérifier.
+
+Le script d'interface commence par **s'auto-contrôler** : il vérifie que son
+détecteur de numéros trouve un vrai numéro et ignore horodatages et UUID. Un
+détecteur cassé ferait sinon passer toutes les garanties « aucun numéro à
+l'écran » au vert. Il exige l'API et les deux apps démarrées, plus le jeu de
+démonstration.
 
 ## Système de design
 
@@ -155,6 +174,32 @@ Navigation basse à 3 onglets sur les deux apps mobiles : Suivi/Commandes/Profil
 - JWT courte durée + contrôle d'accès par rôle
 - Respect OWASP Top 10 sur toutes les API
 - Rate limiting sur les endpoints publics (auth, tracking, masquage)
+
+### Sessions
+
+Deux jetons, aux rôles distincts — ne pas les confondre :
+
+| | Jeton d'accès (JWT) | Jeton de renouvellement |
+| --- | --- | --- |
+| Durée | 30 min (`JWT_DUREE_MINUTES`) | 30 j (`REFRESH_DUREE_JOURS`) |
+| Révocable | non | oui, table `sessions_refresh` |
+| Stocké | nulle part côté serveur | **haché** (SHA-256), jamais en clair |
+
+`POST /api/auth/refresh` fait **tourner** le jeton à chaque usage : l'ancien est
+marqué `remplace_par`. Si un jeton déjà remplacé revient, c'est qu'il a été volé
+— toute la chaîne de l'utilisateur est révoquée, et la réponse reste un 401
+indifférencié pour ne rien apprendre au porteur. Les claims sont **relus en base**
+au renouvellement : un rôle changé ne survit pas au jeton qui le portait.
+
+Côté fronts, le renouvellement est à la fois **réactif** (401 → renouveler →
+rejouer une fois) et **proactif** (`assurerJetonFrais()` à l'ouverture, toutes
+les 5 min, et au retour au premier plan). Le proactif n'est pas un luxe : une
+WebSocket porte son jeton dans l'URL du handshake et ne peut pas le rattraper
+après coup — d'où l'appel avant chaque `new WebSocket(...)`.
+
+Tests : `node backend/scripts/test-refresh.mjs` (cycle complet, rejeu, révocation)
+et `test-session-longue.mjs`, qui attend une **vraie** expiration face à une API
+lancée avec `JWT_DUREE_MINUTES=1`.
 
 ## Contraintes réseau locales
 

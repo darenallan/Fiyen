@@ -3,6 +3,7 @@ import {
   api,
   ApiError,
   urlWebSocketMasquage,
+  assurerJetonFrais,
   type MessageMasque,
   type SessionMasquage,
 } from './api';
@@ -42,7 +43,7 @@ export function ChatMasque({ courseId, onFermer }: { courseId: string; onFermer:
         if (!montéRef.current) return;
         setMessages(histo ?? []);
 
-        if (s.active) connecter(s.session_id);
+        if (s.active) void connecter(s.session_id);
       } catch (err) {
         if (!montéRef.current) return;
         setErreur(
@@ -53,8 +54,13 @@ export function ChatMasque({ courseId, onFermer }: { courseId: string; onFermer:
       }
     })();
 
-    function connecter(sessionId: string) {
+    async function connecter(sessionId: string) {
       if (!montéRef.current) return;
+      // Le jeton part dans l'URL du handshake et ne peut pas être rejoué :
+      // il doit être frais *avant* l'ouverture, pas rattrapé après.
+      await assurerJetonFrais();
+      if (!montéRef.current) return;
+
       let ws: WebSocket;
       try {
         ws = new WebSocket(urlWebSocketMasquage(sessionId));
@@ -97,7 +103,7 @@ export function ChatMasque({ courseId, onFermer }: { courseId: string; onFermer:
       if (!montéRef.current || timerRef.current !== null) return;
       timerRef.current = window.setTimeout(() => {
         timerRef.current = null;
-        connecter(sessionId);
+        void connecter(sessionId);
       }, delaiRef.current);
       delaiRef.current = Math.min(delaiRef.current * 2, DELAI_RECONNEXION_MAX_MS);
     }

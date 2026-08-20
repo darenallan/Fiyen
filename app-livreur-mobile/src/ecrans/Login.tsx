@@ -22,12 +22,12 @@ export function Login({ onConnecte }: { onConnecte: () => void }) {
     setErreur(null);
     setEnCours(true);
     try {
-      const { token } = await api.login(telephone.trim(), motDePasse);
+      const { token, refresh_token } = await api.login(telephone.trim(), motDePasse);
       if (decodeRole(token) !== 'livreur') {
         setErreur("Ce compte n'est pas un compte livreur.");
         return;
       }
-      await definirToken(token);
+      await definirToken(token, refresh_token);
       onConnecte();
     } catch (err) {
       setErreur(err instanceof ApiError ? err.message : 'Connexion impossible');

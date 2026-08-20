@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 
-import { API_BASE_URL, chargerToken } from './api';
+import { API_BASE_URL, chargerToken, assurerJetonFrais, renouvelerSession } from './api';
 
 /**
  * Nom de la tâche de localisation. La tâche est enregistrée au chargement du
@@ -115,19 +115,36 @@ export async function viderFile(forcer = false): Promise<void> {
   const attenteEcoulee = Date.now() - dernierEnvoi >= INTERVALLE_ENVOI_MS;
   if (!forcer && file.length < TAILLE_LOT && !attenteEcoulee) return;
 
+  // Renouvellement avant l'envoi : la tâche tourne en arrière-plan, sans
+  // interface pour signaler un jeton mort. Un échec ici n'est pas bloquant —
+  // le serveur tranchera, et un 401 déclenchera la tentative de rattrapage.
+  await assurerJetonFrais();
+
   const token = await chargerToken();
   if (!token) return;
 
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/livreurs/me/positions`, {
+  const envoyer = (jeton: string) =>
+    fetch(`${API_BASE_URL}/api/livreurs/me/positions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton}` },
       body: JSON.stringify({ positions: file }),
     });
 
+  try {
+    let res = await envoyer(token);
+
+    // Le jeton a pu mourir entre la vérification et l'envoi : on force une
+    // rotation et on rejoue **une** fois. Jeter la file sans essayer ferait un
+    // trou dans le trajet du livreur ; boucler sans limite la ferait gonfler.
+    if (res.status === 401 && (await renouvelerSession())) {
+      const frais = await chargerToken();
+      if (frais) res = await envoyer(frais);
+    }
+
     if (!res.ok) {
-      // 401 : jeton expiré — inutile de conserver des positions qu'on ne pourra
-      // plus déposer, l'écran de connexion reprendra la main.
+      // Toujours 401 après rotation : la session est réellement finie. Inutile
+      // de conserver des positions qu'on ne pourra plus déposer, l'écran de
+      // connexion reprendra la main.
       if (res.status === 401) await ecrireFile([]);
       return;
     }

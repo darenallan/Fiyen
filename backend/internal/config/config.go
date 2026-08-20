@@ -14,6 +14,7 @@ type Config struct {
 	RedisPassword       string
 	JWTSecret           string
 	JWTDureeMinutes     int
+	RefreshDureeJours   int
 	PositionTTLSecondes int
 	MasquageDureeHeures int
 	CORSOrigins         string
@@ -29,6 +30,9 @@ func Load() *Config {
 		RedisPassword:       getEnv("REDIS_PASSWORD", ""),
 		JWTSecret:           mustEnv("JWT_SECRET"),
 		JWTDureeMinutes:     getEnvInt("JWT_DUREE_MINUTES", 30),
+		// 30 jours : un livreur qui travaille tous les jours ne ressaisit jamais
+		// son mot de passe, et une session oubliée finit quand même par mourir.
+		RefreshDureeJours: getEnvInt("REFRESH_DUREE_JOURS", 30),
 		PositionTTLSecondes: getEnvInt("POSITION_TTL_SECONDES", 30),
 		MasquageDureeHeures: getEnvInt("MASQUAGE_DUREE_HEURES", 4),
 		CORSOrigins:         getEnv("CORS_ORIGINS", "http://localhost:5173,http://localhost:5174"),

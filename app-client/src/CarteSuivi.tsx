@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { urlWebSocketCourse, type PositionLivreur } from './api';
+import { urlWebSocketCourse, assurerJetonFrais, type PositionLivreur } from './api';
 
 /** Ouagadougou — vue par défaut avant la première position reçue. */
 const CENTRE_DEFAUT: [number, number] = [12.3714, -1.5197];
@@ -57,8 +57,13 @@ export function CarteSuivi({ courseId }: { courseId: string }) {
   useEffect(() => {
     montéRef.current = true;
 
-    function connecter() {
+    async function connecter() {
       if (!montéRef.current) return;
+      // Le jeton part dans l'URL du handshake et ne peut pas être rejoué :
+      // il doit être frais *avant* l'ouverture, pas rattrapé après.
+      await assurerJetonFrais();
+      if (!montéRef.current) return;
+
       let ws: WebSocket;
       try {
         ws = new WebSocket(urlWebSocketCourse(courseId));
@@ -94,12 +99,12 @@ export function CarteSuivi({ courseId }: { courseId: string }) {
       if (!montéRef.current || timerRef.current !== null) return;
       timerRef.current = window.setTimeout(() => {
         timerRef.current = null;
-        connecter();
+        void connecter();
       }, delaiRef.current);
       delaiRef.current = Math.min(delaiRef.current * 2, DELAI_RECONNEXION_MAX_MS);
     }
 
-    connecter();
+    void connecter();
 
     return () => {
       montéRef.current = false;
