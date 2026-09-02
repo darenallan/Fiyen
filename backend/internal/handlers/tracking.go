@@ -116,7 +116,40 @@ func (d *Deps) DeposerPositions(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"traitees": traitees, "recues": len(body.Positions)})
 }
 
-// CoursePositionWS — le client ou la compagnie s'abonne à la position live du livreur assigné.
+// positionAnonyme est ce que reçoit quiconque suit une course sans avoir à
+// savoir *qui* la porte : le point, l'heure de capture, rien d'autre.
+//
+// Le canal Redis transporte le `livreur_id` — la compagnie en a besoin pour sa
+// vue flotte. Le relayer tel quel au destinataire ou au partenaire romprait la
+// garantie centrale du produit, qui veut qu'ils ne connaissent jamais
+// l'identifiant de leur livreur. D'où ce ré-encodage, au seul endroit où la
+// frontière se franchit.
+type positionAnonyme struct {
+	Latitude   float64   `json:"latitude"`
+	Longitude  float64   `json:"longitude"`
+	Horodatage time.Time `json:"horodatage"`
+}
+
+func anonymiserPosition(payload []byte) ([]byte, bool) {
+	var recu struct {
+		Latitude   float64   `json:"latitude"`
+		Longitude  float64   `json:"longitude"`
+		Horodatage time.Time `json:"horodatage"`
+	}
+	if err := json.Unmarshal(payload, &recu); err != nil {
+		// Message illisible : mieux vaut ne rien transmettre que transmettre
+		// un contenu dont on ne sait pas ce qu'il porte.
+		return nil, false
+	}
+	sortie, err := json.Marshal(positionAnonyme(recu))
+	if err != nil {
+		return nil, false
+	}
+	return sortie, true
+}
+
+// CoursePositionWS — le destinataire, le partenaire ou la compagnie s'abonne à
+// la position live du livreur assigné.
 func (d *Deps) CoursePositionWS(conn *websocket.Conn) {
 	defer conn.Close()
 
@@ -132,24 +165,38 @@ func (d *Deps) CoursePositionWS(conn *websocket.Conn) {
 
 	ctx := context.Background()
 
-	var compagnieID, clientID uuid.UUID
-	var livreurID *uuid.UUID
+	var compagnieID, destinataireID uuid.UUID
+	var livreurID, partenaireID *uuid.UUID
 	err = d.DB.QueryRow(ctx,
-		`SELECT compagnie_id, client_id, livreur_id FROM courses WHERE id = $1`,
+		`SELECT compagnie_id, destinataire_id, livreur_id, partenaire_id FROM courses WHERE id = $1`,
 		courseID,
-	).Scan(&compagnieID, &clientID, &livreurID)
+	).Scan(&compagnieID, &destinataireID, &livreurID, &partenaireID)
 	if err != nil {
 		return
 	}
 
+	// `autorise` part à faux et le switch n'a pas de défaut permissif : un rôle
+	// ajouté plus tard sans y penser sera refusé, pas admis par inadvertance.
 	autorise := false
+	// Seule la compagnie a le droit de savoir *qui* porte le colis. Pour tous
+	// les autres, la position est anonymisée avant d'être relayée.
+	anonymiser := true
+
 	switch claims.Role {
 	case models.RoleCompagnie:
 		autorise = claims.CompagnieID != nil && *claims.CompagnieID == compagnieID
-	case models.RoleClient:
-		autorise = claims.ClientID != nil && *claims.ClientID == clientID
+		anonymiser = false
+	case models.RoleDestinataire:
+		autorise = claims.DestinataireID != nil && *claims.DestinataireID == destinataireID
 	case models.RoleLivreur:
 		autorise = claims.LivreurID != nil && livreurID != nil && *claims.LivreurID == *livreurID
+		// Le livreur suit sa propre position : rien à lui cacher.
+		anonymiser = false
+	case models.RolePartenaire, models.RoleCollaborateur:
+		// Celui qui a commandé suit son colis. Il ne voit pas plus que le
+		// destinataire : où en est la livraison, pas qui la fait.
+		autorise = claims.PartenaireID != nil && partenaireID != nil &&
+			*claims.PartenaireID == *partenaireID
 	}
 	if !autorise || livreurID == nil {
 		return
@@ -168,7 +215,15 @@ func (d *Deps) CoursePositionWS(conn *websocket.Conn) {
 	}()
 
 	_ = tracking.SouscrirePositionCourse(subCtx, d.Redis, *livreurID, func(payload []byte) {
-		if err := conn.WriteMessage(websocket.TextMessage, payload); err != nil {
+		sortie := payload
+		if anonymiser {
+			propre, ok := anonymiserPosition(payload)
+			if !ok {
+				return
+			}
+			sortie = propre
+		}
+		if err := conn.WriteMessage(websocket.TextMessage, sortie); err != nil {
 			cancel()
 		}
 	})

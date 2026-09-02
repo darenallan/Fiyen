@@ -12,12 +12,12 @@ import (
 )
 
 type creerCourseBody struct {
-	ClientID       *uuid.UUID `json:"client_id,omitempty"` // requis si créé par une compagnie
+	DestinataireID *uuid.UUID `json:"destinataire_id,omitempty"` // requis si créé par une compagnie
 	AdresseDepart  string     `json:"adresse_depart"`
 	AdresseArrivee string     `json:"adresse_arrivee"`
 }
 
-// CreerCourse (compagnie ou client) — statut initial en_attente.
+// CreerCourse (compagnie ou destinataire) — statut initial en_attente.
 func (d *Deps) CreerCourse(c *fiber.Ctx) error {
 	claims := middleware.ClaimsDe(c)
 	var body creerCourseBody
@@ -28,30 +28,52 @@ func (d *Deps) CreerCourse(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "adresse_depart et adresse_arrivee requis")
 	}
 
-	var compagnieID, clientID uuid.UUID
+	var compagnieID, destinataireID uuid.UUID
 	switch claims.Role {
-	case models.RoleClient:
-		return fiber.NewError(fiber.StatusBadRequest, "la création via compte client nécessite de préciser la compagnie — utilisez l'endpoint compagnie pour le MVP")
+	case models.RoleDestinataire:
+		return fiber.NewError(fiber.StatusBadRequest, "la création via compte destinataire nécessite de préciser la compagnie — utilisez l'endpoint compagnie pour le MVP")
 	case models.RoleCompagnie:
 		compagnieID = *claims.CompagnieID
-		if body.ClientID == nil {
-			return fiber.NewError(fiber.StatusBadRequest, "client_id requis")
+		if body.DestinataireID == nil {
+			return fiber.NewError(fiber.StatusBadRequest, "destinataire_id requis")
 		}
-		clientID = *body.ClientID
+		destinataireID = *body.DestinataireID
 	default:
 		return fiber.NewError(fiber.StatusForbidden, "rôle non autorisé à créer une course")
 	}
 
-	var courseID uuid.UUID
-	err := d.DB.QueryRow(c.Context(), `
-		INSERT INTO courses (compagnie_id, client_id, adresse_depart, adresse_arrivee)
-		VALUES ($1, $2, $3, $4) RETURNING id
-	`, compagnieID, clientID, body.AdresseDepart, body.AdresseArrivee).Scan(&courseID)
+	// Transaction : l'attribution du numéro incrémente un compteur porté par la
+	// compagnie. Hors transaction, un échec d'insertion laisserait un trou dans
+	// la suite, et l'opérateur se demanderait où est passée la course FY-1043.
+	ctx := c.Context()
+	tx, err := d.DB.Begin(ctx)
 	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "erreur interne")
+	}
+	defer tx.Rollback(ctx)
+
+	numero, err := attribuerNumero(ctx, tx, compagnieID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "attribution du numéro échouée")
+	}
+
+	var courseID uuid.UUID
+	if err := tx.QueryRow(ctx, `
+		INSERT INTO courses (compagnie_id, destinataire_id, numero, adresse_depart, adresse_arrivee)
+		VALUES ($1, $2, $3, $4, $5) RETURNING id
+	`, compagnieID, destinataireID, numero, body.AdresseDepart, body.AdresseArrivee).Scan(&courseID); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "création course échouée")
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"id": courseID, "statut": models.CourseEnAttente})
+	if err := tx.Commit(ctx); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "erreur interne")
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"id":     courseID,
+		"numero": FormaterNumero(numero),
+		"statut": models.CourseEnAttente,
+	})
 }
 
 type assignerCourseBody struct {
@@ -81,8 +103,15 @@ func (d *Deps) AssignerCourse(c *fiber.Ctx) error {
 
 	var statutActuel models.StatutCourse
 	var courseCompagnieID uuid.UUID
-	err = tx.QueryRow(ctx, `SELECT statut, compagnie_id FROM courses WHERE id = $1 FOR UPDATE`, courseID).
-		Scan(&statutActuel, &courseCompagnieID)
+	var numero int
+	var adresseArrivee string
+	// Le numéro et l'adresse sont lus ici plutôt que relus après coup : ils
+	// servent à la notification, et une seconde requête pourrait tomber sur
+	// une course modifiée entre-temps.
+	err = tx.QueryRow(ctx,
+		`SELECT statut, compagnie_id, numero, COALESCE(adresse_arrivee, '')
+		 FROM courses WHERE id = $1 FOR UPDATE`, courseID).
+		Scan(&statutActuel, &courseCompagnieID, &numero, &adresseArrivee)
 	if err == pgx.ErrNoRows {
 		return fiber.NewError(fiber.StatusNotFound, "course introuvable")
 	}
@@ -138,6 +167,11 @@ func (d *Deps) AssignerCourse(c *fiber.Ctx) error {
 	if err := tx.Commit(ctx); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "erreur interne")
 	}
+
+	// Après le commit seulement : notifier une assignation qui échouerait
+	// ensuite enverrait le livreur vers une course qui n'existe pas.
+	d.notifierLivreurAssignation(body.LivreurID, courseID, numero, adresseArrivee)
+	d.publierEvenementCourse(courseID, models.CourseAssignee)
 
 	return c.JSON(fiber.Map{"statut": models.CourseAssignee, "livreur_id": body.LivreurID})
 }
@@ -212,10 +246,14 @@ func (d *Deps) MettreAJourStatutCourse(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "erreur interne")
 	}
 
+	// Apres le commit : annoncer un statut qui n'aurait pas ete enregistre
+	// ferait afficher au partenaire une etape qui n'a pas eu lieu.
+	d.publierEvenementCourse(courseID, body.Statut)
+
 	return c.JSON(fiber.Map{"statut": body.Statut})
 }
 
-// ObtenirCourse — accessible à la compagnie propriétaire, au client, ou au livreur assigné.
+// ObtenirCourse — accessible à la compagnie propriétaire, au destinataire, ou au livreur assigné.
 func (d *Deps) ObtenirCourse(c *fiber.Ctx) error {
 	claims := middleware.ClaimsDe(c)
 	courseID, err := uuid.Parse(c.Params("id"))
@@ -225,9 +263,9 @@ func (d *Deps) ObtenirCourse(c *fiber.Ctx) error {
 
 	var course models.Course
 	err = d.DB.QueryRow(c.Context(), `
-		SELECT id, compagnie_id, client_id, livreur_id, statut, adresse_depart, adresse_arrivee, created_at, updated_at
+		SELECT id, compagnie_id, destinataire_id, livreur_id, statut, adresse_depart, adresse_arrivee, created_at, updated_at
 		FROM courses WHERE id = $1
-	`, courseID).Scan(&course.ID, &course.CompagnieID, &course.ClientID, &course.LivreurID,
+	`, courseID).Scan(&course.ID, &course.CompagnieID, &course.DestinataireID, &course.LivreurID,
 		&course.Statut, &course.AdresseDepart, &course.AdresseArrivee, &course.CreatedAt, &course.UpdatedAt)
 	if err == pgx.ErrNoRows {
 		return fiber.NewError(fiber.StatusNotFound, "course introuvable")
@@ -240,8 +278,8 @@ func (d *Deps) ObtenirCourse(c *fiber.Ctx) error {
 	switch claims.Role {
 	case models.RoleCompagnie:
 		autorise = claims.CompagnieID != nil && *claims.CompagnieID == course.CompagnieID
-	case models.RoleClient:
-		autorise = claims.ClientID != nil && *claims.ClientID == course.ClientID
+	case models.RoleDestinataire:
+		autorise = claims.DestinataireID != nil && *claims.DestinataireID == course.DestinataireID
 	case models.RoleLivreur:
 		autorise = claims.LivreurID != nil && course.LivreurID != nil && *claims.LivreurID == *course.LivreurID
 	}
@@ -261,12 +299,12 @@ func (d *Deps) ListerCourses(c *fiber.Ctx) error {
 	var err error
 	if statutFiltre != "" {
 		rows, err = d.DB.Query(c.Context(), `
-			SELECT id, compagnie_id, client_id, livreur_id, statut, adresse_depart, adresse_arrivee, created_at, updated_at
+			SELECT id, compagnie_id, destinataire_id, livreur_id, statut, adresse_depart, adresse_arrivee, created_at, updated_at
 			FROM courses WHERE compagnie_id = $1 AND statut = $2 ORDER BY created_at DESC
 		`, claims.CompagnieID, statutFiltre)
 	} else {
 		rows, err = d.DB.Query(c.Context(), `
-			SELECT id, compagnie_id, client_id, livreur_id, statut, adresse_depart, adresse_arrivee, created_at, updated_at
+			SELECT id, compagnie_id, destinataire_id, livreur_id, statut, adresse_depart, adresse_arrivee, created_at, updated_at
 			FROM courses WHERE compagnie_id = $1 ORDER BY created_at DESC
 		`, claims.CompagnieID)
 	}
@@ -278,7 +316,7 @@ func (d *Deps) ListerCourses(c *fiber.Ctx) error {
 	var resultats []models.Course
 	for rows.Next() {
 		var course models.Course
-		if err := rows.Scan(&course.ID, &course.CompagnieID, &course.ClientID, &course.LivreurID,
+		if err := rows.Scan(&course.ID, &course.CompagnieID, &course.DestinataireID, &course.LivreurID,
 			&course.Statut, &course.AdresseDepart, &course.AdresseArrivee, &course.CreatedAt, &course.UpdatedAt); err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, "lecture échouée")
 		}
@@ -301,8 +339,8 @@ func (d *Deps) ListerMesCourses(c *fiber.Ctx) error {
 	switch {
 	case claims.LivreurID != nil:
 		colonne, identifiant = "livreur_id", claims.LivreurID
-	case claims.ClientID != nil:
-		colonne, identifiant = "client_id", claims.ClientID
+	case claims.DestinataireID != nil:
+		colonne, identifiant = "destinataire_id", claims.DestinataireID
 	default:
 		return fiber.NewError(fiber.StatusForbidden, "compte sans course rattachée")
 	}
@@ -310,7 +348,7 @@ func (d *Deps) ListerMesCourses(c *fiber.Ctx) error {
 	// colonne ne vient pas de l'utilisateur : c'est l'une des deux constantes
 	// ci-dessus, choisies d'après le rôle porté par le JWT.
 	requete := `
-		SELECT id, compagnie_id, client_id, livreur_id, statut, adresse_depart, adresse_arrivee, created_at, updated_at
+		SELECT id, compagnie_id, destinataire_id, livreur_id, statut, adresse_depart, adresse_arrivee, created_at, updated_at
 		FROM courses WHERE ` + colonne + ` = $1
 	`
 	if c.Query("toutes") != "1" {
@@ -327,7 +365,7 @@ func (d *Deps) ListerMesCourses(c *fiber.Ctx) error {
 	var resultats []models.Course
 	for rows.Next() {
 		var course models.Course
-		if err := rows.Scan(&course.ID, &course.CompagnieID, &course.ClientID, &course.LivreurID,
+		if err := rows.Scan(&course.ID, &course.CompagnieID, &course.DestinataireID, &course.LivreurID,
 			&course.Statut, &course.AdresseDepart, &course.AdresseArrivee, &course.CreatedAt, &course.UpdatedAt); err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, "lecture échouée")
 		}

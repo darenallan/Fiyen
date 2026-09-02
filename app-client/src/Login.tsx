@@ -20,8 +20,8 @@ export function Login({ onConnecte }: { onConnecte: () => void }) {
         ? await api.inscription(nom, telephone, motDePasse)
         : await api.login(telephone, motDePasse);
 
-      if (decodeRole(token) !== 'client') {
-        setErreur("Ce compte n'est pas un compte client.");
+      if (decodeRole(token) !== 'destinataire') {
+        setErreur("Ce compte ne permet pas de suivre une livraison. Utilisez l'application qui lui correspond.");
         return;
       }
       setToken(token, refresh_token);

@@ -1,0 +1,1107 @@
+/* ==========================================================================
+   FIYEN — système de design (app client)
+   Direction : vert forêt & moutarde, registre chaleureux-populaire, avec
+   brillance. Reprise de la maquette `fiyen-v3-vert-moutarde.html`.
+
+   Cette feuille **fait référence** : `app-livreur`, `dashboard` et
+   `app-livreur-mobile/src/theme.ts` en recopient les jetons (projets Vite
+   indépendants). Toute évolution doit y être répercutée.
+   ========================================================================== */
+
+/* Polices auto-hébergées : sur un réseau mobile instable, dépendre d'un CDN
+   ajoute un aller-retour qui retarde le premier rendu. */
+@font-face {
+  font-family: 'Baloo 2';
+  src: url('./polices/baloo2-variable.woff2') format('woff2-variations');
+  font-weight: 400 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Work Sans';
+  src: url('./polices/work-sans-variable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Mono';
+  src: url('./polices/space-mono-400.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Mono';
+  src: url('./polices/space-mono-700.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
+:root {
+  /* --- Verts (surfaces sombres) ---------------------------------------- */
+  --vert: #16332a;
+  --vert-2: #1e4235;
+  --vert-3: #2c5646;
+  --vert-nuit: #0e1f19;
+
+  /* --- Crèmes (surfaces claires) --------------------------------------- */
+  --creme: #f5efe1;
+  --creme-2: #eae0c6;
+
+  /* --- Moutarde ---------------------------------------------------------
+     Couleur de **surface** : boutons, pastilles, pilules. Sur crème elle ne
+     tient que 1,91:1 — ne jamais l'utiliser comme texte sur fond clair. */
+  --or: #e0a526;
+  --or-profond: #b37e1a;
+  --or-halo: rgba(224, 165, 38, 0.4);
+  --or-halo-doux: rgba(224, 165, 38, 0.18);
+
+  /* --- Accents ---------------------------------------------------------- */
+  --rust: #d9581f; /* surface uniquement */
+  --rust-texte: #f0834e; /* variante lisible sur vert : 5,23:1 */
+  --succes: #4f7a5e;
+  --succes-texte: #3b6349; /* variante lisible sur crème : 5,97:1 */
+  --succes-fond: rgba(107, 143, 94, 0.18);
+
+  /* --- Texte ------------------------------------------------------------ */
+  --tx-sombre: #f5efe1; /* sur surfaces vertes */
+  --tx-sombre-muet: #a9bdb0;
+  --tx-clair: #16332a; /* sur surfaces crème */
+  --tx-clair-muet: #55605a; /* éclairci depuis #6E7C74 : 3,82 → 5,71:1 */
+  --or-texte-clair: #8a6114; /* moutarde lisible sur crème : 4,82:1 */
+
+  /* --- Rythme ----------------------------------------------------------- */
+  --e-1: 4px;
+  --e-2: 8px;
+  --e-3: 12px;
+  --e-4: 16px;
+  --e-5: 24px;
+  --e-6: 32px;
+
+  --r-sm: 14px;
+  --r-md: 18px;
+  --r-lg: 24px;
+  --r-pill: 999px;
+
+  --ombre-1: 0 1px 2px rgba(22, 51, 42, 0.06), 0 2px 6px rgba(22, 51, 42, 0.05);
+  --ombre-2: 0 4px 14px rgba(22, 51, 42, 0.09), 0 12px 30px rgba(22, 51, 42, 0.07);
+
+  --courbe: cubic-bezier(0.16, 1, 0.3, 1);
+  --duree-courte: 160ms;
+  --duree: 260ms;
+
+  --titre: 'Baloo 2', system-ui, sans-serif;
+  --corps: 'Work Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'Space Mono', ui-monospace, Consolas, monospace;
+
+  --h-nav: 68px;
+
+  font-family: var(--corps);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--tx-clair);
+  background: var(--creme);
+  -webkit-font-smoothing: antialiased;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  background: var(--creme);
+  min-height: 100vh;
+  overscroll-behavior-y: contain;
+}
+
+/* --------------------------------- Titres -------------------------------- */
+
+h1 {
+  font-family: var(--titre);
+  font-weight: 800;
+  font-size: 30px;
+  line-height: 1.1;
+  margin: 0;
+  color: var(--tx-clair);
+}
+
+h2 {
+  font-family: var(--titre);
+  font-weight: 700;
+  font-size: 19px;
+  margin: 0;
+  color: var(--tx-clair);
+}
+
+h3 {
+  font-family: var(--titre);
+  font-weight: 700;
+  font-size: 16px;
+  margin: 0;
+}
+
+p {
+  margin: 0;
+}
+
+/* Petits libellés en monospace : signature typographique de la direction —
+   dates, compteurs, métadonnées, sur-titres. */
+.mono,
+.meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--tx-clair-muet);
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  display: block;
+}
+
+/* -------------------------------- Marque --------------------------------- */
+
+.marque {
+  font-family: var(--titre);
+  font-weight: 800;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--vert);
+}
+
+.marque-sous {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--tx-clair-muet);
+  margin-top: 4px;
+}
+
+/* -------------------------------- Structure ------------------------------- */
+
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: var(--e-5) var(--e-4);
+  padding-bottom: calc(var(--h-nav) + var(--e-6));
+  min-height: 100vh;
+}
+
+.entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--e-5);
+}
+
+.carte {
+  background: var(--creme);
+  border: 1px solid var(--creme-2);
+  border-radius: var(--r-lg);
+  padding: var(--e-5);
+  margin-bottom: var(--e-4);
+}
+
+/* ---------------------------- Carte sombre (héros) ------------------------
+   Le geste central de la direction : un bloc vert forêt posé sur le crème.
+   L'inversion crée la hiérarchie mieux qu'une carte claire de plus. */
+.heros {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  padding: var(--e-5);
+  margin-bottom: var(--e-4);
+  color: var(--tx-sombre);
+  background: radial-gradient(65% 80% at 85% 8%, var(--or-halo) 0%, rgba(224, 165, 38, 0) 55%),
+    var(--vert);
+  box-shadow: var(--ombre-2);
+}
+
+/* Balayage lumineux oblique : c'est la « brillance » de la direction. */
+.heros::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 244, 222, 0.16) 50%, transparent 58%);
+}
+
+.heros > * {
+  position: relative;
+  z-index: 1;
+}
+
+.heros h1 {
+  color: var(--tx-sombre);
+  font-size: 32px;
+}
+
+.heros .sous {
+  color: var(--tx-sombre-muet);
+  font-size: 14px;
+  margin-top: var(--e-2);
+  line-height: 1.55;
+}
+
+.heros .eyebrow {
+  color: var(--or);
+  margin-bottom: var(--e-3);
+}
+
+.heros .mono {
+  color: var(--tx-sombre-muet);
+}
+
+/* Badge d'angle, comme l'ETA de la maquette. */
+.heros-badge {
+  position: absolute;
+  top: var(--e-4);
+  right: var(--e-4);
+  z-index: 2;
+  background: var(--or);
+  color: var(--vert);
+  font-family: var(--titre);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 5px 13px;
+  border-radius: var(--r-pill);
+  box-shadow: 0 0 18px 2px var(--or-halo);
+}
+
+.heros-progres {
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: rgba(245, 239, 225, 0.2);
+  overflow: hidden;
+  margin-top: var(--e-5);
+}
+
+.heros-progres span {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--or);
+  box-shadow: 0 0 12px 1px var(--or-halo);
+  transition: width 900ms var(--courbe);
+}
+
+.heros-etape {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--tx-sombre-muet);
+  margin-top: var(--e-2);
+}
+
+.heros .trajet {
+  background: rgba(245, 239, 225, 0.08);
+  border: 1px solid rgba(245, 239, 225, 0.14);
+  border-radius: var(--r-md);
+  padding: var(--e-4);
+  margin-top: var(--e-4);
+}
+
+.heros .trajet-marque {
+  background: var(--or);
+  color: var(--vert);
+}
+
+.heros .trajet-point:last-child .trajet-marque {
+  background: var(--creme-2);
+  color: var(--vert);
+}
+
+.heros .trajet-adresse {
+  color: var(--tx-sombre);
+}
+
+.heros .muet {
+  color: var(--tx-sombre-muet);
+}
+
+/* --------------------------------- Champs -------------------------------- */
+
+label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tx-clair-muet);
+  margin-bottom: var(--e-2);
+}
+
+input {
+  font: inherit;
+  font-family: var(--corps);
+  width: 100%;
+  padding: 14px var(--e-4);
+  border: 1.5px solid var(--creme-2);
+  border-radius: var(--r-sm);
+  background: #fffdf7;
+  color: var(--tx-clair);
+  transition: border-color var(--duree-courte) var(--courbe),
+    box-shadow var(--duree-courte) var(--courbe);
+}
+
+input::placeholder {
+  color: var(--tx-clair-muet);
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--or);
+  box-shadow: 0 0 0 4px var(--or-halo-doux);
+}
+
+/* -------------------------------- Boutons -------------------------------- */
+
+button {
+  position: relative;
+  overflow: hidden;
+  font-family: var(--titre);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  /* 52px : cible tactile confortable, au-delà du minimum de 44px */
+  min-height: 52px;
+  padding: 14px var(--e-5);
+  border: none;
+  border-radius: var(--r-sm);
+  background: var(--or);
+  color: var(--vert);
+  box-shadow: 0 0 22px 2px var(--or-halo);
+  transition: transform var(--duree-courte) var(--courbe),
+    filter var(--duree-courte) var(--courbe), box-shadow var(--duree-courte) var(--courbe);
+}
+
+/* Même balayage lumineux que sur les surfaces sombres. */
+button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.35) 48%, transparent 66%);
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.06);
+  box-shadow: 0 0 30px 4px var(--or-halo);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.975);
+}
+
+button:focus-visible {
+  outline: 3px solid var(--vert);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  /* Fond neutre plutôt qu'une opacité globale : à 45 % d'opacité le libellé
+     devenait illisible, et l'utilisateur ne pouvait plus lire pourquoi
+     l'action est indisponible. */
+  background: var(--creme-2);
+  color: var(--tx-clair-muet);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+button:disabled::after {
+  display: none;
+}
+
+button.contour {
+  background: transparent;
+  border: 1.5px solid var(--creme-2);
+  color: var(--tx-clair);
+  box-shadow: none;
+}
+
+button.contour::after {
+  display: none;
+}
+
+button.contour:hover:not(:disabled) {
+  background: var(--creme-2);
+  filter: none;
+  box-shadow: none;
+}
+
+button.discret {
+  width: auto;
+  min-height: 38px;
+  padding: var(--e-2) var(--e-4);
+  font-size: 13px;
+}
+
+/* Bouton rond d'en-tête, comme dans la maquette. */
+.icone-ronde {
+  width: 38px;
+  height: 38px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--creme-2);
+  color: var(--tx-clair);
+  box-shadow: none;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.icone-ronde::after {
+  display: none;
+}
+
+.icone-ronde:hover:not(:disabled) {
+  background: var(--or);
+  filter: none;
+  box-shadow: none;
+}
+
+.icone-ronde svg {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* --------------------------------- Pilules -------------------------------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  background: var(--creme-2);
+  color: var(--tx-clair-muet);
+}
+
+.badge.actif {
+  background: var(--or);
+  color: var(--vert);
+}
+
+.badge.succes {
+  background: var(--succes-fond);
+  color: var(--succes-texte);
+}
+
+.badge.erreur {
+  background: rgba(217, 88, 31, 0.15);
+  color: #a53f13;
+}
+
+/* Dans un héros, les pilules s'inversent. */
+.heros .badge {
+  background: rgba(245, 239, 225, 0.14);
+  color: var(--tx-sombre);
+}
+
+.heros .badge.actif {
+  background: var(--or);
+  color: var(--vert);
+}
+
+.pastille {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.pastille.vivante {
+  animation: pulsation 1.8s ease-in-out infinite;
+}
+
+@keyframes pulsation {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ------------------------- Suivi de commande (étapes) --------------------- */
+
+.etapes {
+  display: flex;
+  flex-direction: column;
+}
+
+.etape-ligne {
+  display: flex;
+  gap: var(--e-3);
+  position: relative;
+  padding-bottom: 22px;
+}
+
+.etape-ligne:last-child {
+  padding-bottom: 0;
+}
+
+/* Trait de liaison tracé en ::before, comme dans la maquette. */
+.etape-ligne::before {
+  content: '';
+  position: absolute;
+  left: 13px;
+  top: 30px;
+  bottom: 0;
+  width: 2px;
+  background: var(--creme-2);
+}
+
+.etape-ligne:last-child::before {
+  display: none;
+}
+
+.etape-pastille {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  z-index: 1;
+  background: var(--creme-2);
+  color: var(--tx-clair-muet);
+  transition: background var(--duree) var(--courbe), color var(--duree) var(--courbe),
+    box-shadow var(--duree) var(--courbe);
+}
+
+.etape-icone {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.etape-ligne.faite .etape-pastille {
+  background: var(--or);
+  color: var(--vert);
+}
+
+/* L'étape courante porte un halo ET un libellé en gras : l'information ne
+   repose jamais sur la seule couleur. */
+.etape-ligne.courante .etape-pastille {
+  background: var(--or);
+  color: var(--vert);
+  box-shadow: 0 0 0 4px var(--or-halo);
+}
+
+.etape-libelle {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--tx-clair);
+  line-height: 1.35;
+}
+
+.etape-ligne.a-venir .etape-libelle {
+  color: var(--tx-clair-muet);
+  font-weight: 500;
+}
+
+.etape-ligne.courante .etape-libelle {
+  font-weight: 700;
+}
+
+.etape-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--tx-clair-muet);
+  margin-top: 2px;
+}
+
+
+/* ------------------------- Tracé de course (héros) ------------------------
+   Motif signature de la direction : une route en pointillés avec un point
+   lumineux positionné selon l'avancement réel de la course. */
+.route {
+  width: 100%;
+  height: 78px;
+  margin-top: var(--e-4);
+  overflow: visible;
+}
+
+.route-trace {
+  fill: none;
+  stroke: var(--or);
+  stroke-width: 2.5;
+  stroke-dasharray: 1 9;
+  stroke-linecap: round;
+  opacity: 0.55;
+}
+
+/* Portion parcourue : même tracé, en trait plein et à pleine intensité. */
+.route-faite {
+  fill: none;
+  stroke: var(--or);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px var(--or-halo));
+  transition: stroke-dashoffset 900ms var(--courbe);
+}
+
+.route-point {
+  fill: var(--or);
+  filter: drop-shadow(0 0 6px var(--or-halo));
+  transition: offset-distance 900ms var(--courbe);
+  offset-path: path('M10 62 C 60 62, 70 16, 120 21 S 200 11 230 16');
+  offset-rotate: 0deg;
+  animation: pulsation 1.8s ease-in-out infinite;
+}
+
+/* --------------------------------- Trajet -------------------------------- */
+
+.trajet {
+  display: grid;
+  gap: var(--e-3);
+  margin-top: var(--e-4);
+}
+
+.trajet-point {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: var(--e-3);
+  align-items: start;
+}
+
+.trajet-marque {
+  font-family: var(--titre);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--creme);
+  background: var(--vert);
+  border-radius: 9px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+}
+
+.trajet-adresse {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tx-clair);
+  padding-top: 3px;
+}
+
+.trajet .muet {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 400;
+  color: var(--tx-clair-muet);
+}
+
+/* --------------------------- Chiffres en bandeau -------------------------- */
+
+.puces-stats {
+  display: flex;
+  gap: var(--e-2);
+}
+
+.puce-stat {
+  flex: 1;
+  background: var(--creme-2);
+  border-radius: var(--r-sm);
+  padding: var(--e-3) var(--e-2);
+  text-align: center;
+}
+
+.puce-stat .val {
+  font-family: var(--titre);
+  font-weight: 700;
+  font-size: 19px;
+  color: var(--tx-clair);
+}
+
+.puce-stat .lbl {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tx-clair-muet);
+  margin-top: 2px;
+}
+
+/* ---------------------------------- Carte --------------------------------- */
+
+.carte-suivi {
+  height: 320px;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  border: 1px solid var(--creme-2);
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--creme);
+  color: var(--tx-clair);
+}
+
+.leaflet-control-attribution {
+  background: rgba(245, 239, 225, 0.88) !important;
+  font-size: 10px !important;
+}
+
+/* Marqueur du livreur : pastille moutarde à halo pulsant. */
+.halo-livreur {
+  display: block;
+  width: 14px;
+  height: 14px;
+  margin: 3px;
+  border-radius: 50%;
+  background: var(--or);
+  border: 2.5px solid var(--vert);
+  box-shadow: 0 0 10px 2px var(--or-halo);
+  animation: halo 2.2s var(--courbe) infinite;
+}
+
+@keyframes halo {
+  0% {
+    box-shadow: 0 0 0 0 var(--or-halo), 0 0 10px 2px var(--or-halo);
+  }
+  70% {
+    box-shadow: 0 0 0 15px rgba(224, 165, 38, 0), 0 0 10px 2px var(--or-halo);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(224, 165, 38, 0), 0 0 10px 2px var(--or-halo);
+  }
+}
+
+/* -------------------------------- Messages -------------------------------- */
+
+.fil-messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  max-height: 300px;
+  overflow-y: auto;
+  padding: var(--e-1) 2px;
+}
+
+.bulle {
+  max-width: 82%;
+  padding: 11px 15px;
+  font-size: 15px;
+  line-height: 1.45;
+  border-radius: var(--r-md);
+  word-break: break-word;
+  animation: entree-bulle var(--duree) var(--courbe);
+}
+
+.bulle.moi {
+  align-self: flex-end;
+  background: var(--vert);
+  color: var(--tx-sombre);
+  border-bottom-right-radius: 5px;
+}
+
+.bulle.lui {
+  align-self: flex-start;
+  background: var(--creme-2);
+  color: var(--tx-clair);
+  border-bottom-left-radius: 5px;
+}
+
+@keyframes entree-bulle {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.zone-saisie {
+  display: flex;
+  gap: var(--e-2);
+  margin-top: var(--e-4);
+}
+
+.zone-saisie button {
+  width: auto;
+  padding: 0 var(--e-5);
+  flex-shrink: 0;
+}
+
+/* --------------------------- Barre de navigation -------------------------- */
+
+.nav-bas {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--h-nav);
+  /* Respecte la zone de geste des téléphones sans bouton physique. */
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  background: var(--vert);
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  z-index: 900;
+}
+
+.nav-bas button {
+  position: relative;
+  width: auto;
+  flex: 1;
+  min-height: 0;
+  padding: var(--e-2) var(--e-1);
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--tx-sombre-muet);
+  font-family: var(--corps);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.nav-bas button::after {
+  display: none;
+}
+
+.nav-bas button:hover:not(:disabled) {
+  background: none;
+  filter: none;
+  box-shadow: none;
+  color: var(--tx-sombre);
+}
+
+.nav-bas button.actif {
+  color: var(--or);
+}
+
+/* L'onglet actif est signalé par un trait, pas seulement par la couleur. */
+.nav-bas button.actif::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 30px;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--or);
+  box-shadow: 0 0 12px 1px var(--or-halo);
+}
+
+.nav-bas .icone {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.nav-point {
+  position: absolute;
+  top: 8px;
+  right: 50%;
+  margin-right: -16px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--or);
+  border: 2px solid var(--vert);
+}
+
+/* ------------------------------- Chargement ------------------------------- */
+
+/* Les squelettes reproduisent la forme du contenu à venir : la mise en page ne
+   se décale pas à l'arrivée des données. */
+.squelette {
+  background: linear-gradient(90deg, var(--creme-2) 25%, #f0e7d2 37%, var(--creme-2) 63%);
+  background-size: 400% 100%;
+  animation: glissement 1.3s ease-in-out infinite;
+  border-radius: var(--r-sm);
+}
+
+@keyframes glissement {
+  from {
+    background-position: 100% 50%;
+  }
+  to {
+    background-position: 0 50%;
+  }
+}
+
+.squelette-ligne {
+  height: 13px;
+  margin-bottom: var(--e-2);
+}
+
+/* -------------------------------- États vides ----------------------------- */
+
+.etat-vide {
+  text-align: center;
+  padding: var(--e-6) var(--e-4);
+}
+
+.etat-vide .illus {
+  width: 66px;
+  height: 66px;
+  margin: 0 auto var(--e-4);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--or-halo-doux);
+  color: var(--or-texte-clair);
+}
+
+.etat-vide .illus svg {
+  width: 30px;
+  height: 30px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* -------------------------------- Divers --------------------------------- */
+
+.attenue {
+  color: var(--tx-clair-muet);
+  font-size: 14px;
+}
+
+.muet {
+  color: var(--tx-clair-muet);
+  font-size: 13px;
+}
+
+.erreur {
+  color: #a53f13;
+  font-size: 14px;
+  margin-top: var(--e-3);
+}
+
+/* Bandeau d'erreur : l'icône double l'information portée par la couleur. */
+.bandeau-erreur {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  background: rgba(217, 88, 31, 0.12);
+  border: 1px solid rgba(217, 88, 31, 0.28);
+  color: #a53f13;
+  border-radius: var(--r-sm);
+  padding: var(--e-3) var(--e-4);
+  font-size: 14px;
+  margin-bottom: var(--e-4);
+}
+
+.jeton-info {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--vert);
+  color: var(--or);
+}
+
+.icone-inline {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.jeton-info svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Visible des seuls lecteurs d'écran. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.apparition {
+  animation: apparition 480ms var(--courbe) both;
+}
+
+/* Entrée en cascade : chaque bloc arrive après le précédent, ce qui guide le
+   regard de haut en bas au lieu de tout révéler d'un coup. */
+.cascade > * {
+  animation: apparition 520ms var(--courbe) both;
+}
+
+.cascade > *:nth-child(1) { animation-delay: 0ms; }
+.cascade > *:nth-child(2) { animation-delay: 70ms; }
+.cascade > *:nth-child(3) { animation-delay: 140ms; }
+.cascade > *:nth-child(4) { animation-delay: 210ms; }
+.cascade > *:nth-child(5) { animation-delay: 280ms; }
+
+@keyframes apparition {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* L'animation ne porte jamais d'information seule : la couper n'enlève rien. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

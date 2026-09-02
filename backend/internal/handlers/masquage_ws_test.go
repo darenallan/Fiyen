@@ -73,12 +73,12 @@ func serveurTest(t *testing.T) (string, *testdb.Jeu) {
 	return fmt.Sprintf("ws://%s", ln.Addr().String()), &jeu
 }
 
-func jetonClient(t *testing.T, clientID uuid.UUID) string {
+func jetonDestinataire(t *testing.T, destinataireID uuid.UUID) string {
 	t.Helper()
 	jeton, err := middleware.GenererToken(secretTest, 30, middleware.Claims{
-		UtilisateurID: uuid.New(),
-		Role:          models.RoleClient,
-		ClientID:      &clientID,
+		UtilisateurID:  uuid.New(),
+		Role:           models.RoleDestinataire,
+		DestinataireID: &destinataireID,
 	})
 	if err != nil {
 		t.Fatalf("génération du jeton: %v", err)
@@ -138,7 +138,7 @@ func TestWS_TiersRefuse(t *testing.T) {
 	base, jeu := serveurTest(t)
 
 	// Un client authentifié, mais qui n'est pas celui de la course.
-	conn, _, err := connecter(t, base, jeu.SessionID, jetonClient(t, jeu.AutreClient))
+	conn, _, err := connecter(t, base, jeu.SessionID, jetonDestinataire(t, jeu.AutreDestinataire))
 	if err != nil {
 		return // refus dès le handshake : la garantie tient
 	}
@@ -184,7 +184,7 @@ func TestWS_JetonDeCompagnieRefuse(t *testing.T) {
 		return
 	}
 	if err := attendreFermeture(conn, 3*time.Second); err != nil {
-		t.Fatalf("la compagnie ne doit pas pouvoir écouter le canal de ses clients: %v", err)
+		t.Fatalf("la compagnie ne doit pas pouvoir écouter le canal de ses destinataires: %v", err)
 	}
 }
 
@@ -193,7 +193,7 @@ func TestWS_JetonDeCompagnieRefuse(t *testing.T) {
 func TestWS_MessageRelayeALAutrePartie(t *testing.T) {
 	base, jeu := serveurTest(t)
 
-	cote1, _, err := connecter(t, base, jeu.SessionID, jetonClient(t, jeu.ClientID))
+	cote1, _, err := connecter(t, base, jeu.SessionID, jetonDestinataire(t, jeu.DestinataireID))
 	if err != nil {
 		t.Fatalf("connexion client: %v", err)
 	}
@@ -211,8 +211,8 @@ func TestWS_MessageRelayeALAutrePartie(t *testing.T) {
 	if recu.Contenu != "je suis devant le portail" {
 		t.Errorf("contenu = %q", recu.Contenu)
 	}
-	if recu.Expediteur != string(masquage.RoleClient) {
-		t.Errorf("expéditeur = %q, attendu %q", recu.Expediteur, masquage.RoleClient)
+	if recu.Expediteur != string(masquage.RoleDestinataire) {
+		t.Errorf("expéditeur = %q, attendu %q", recu.Expediteur, masquage.RoleDestinataire)
 	}
 	if recu.ID == nil || recu.CreatedAt == nil {
 		t.Error("un message relayé doit porter son identifiant et son horodatage serveur")
@@ -222,7 +222,7 @@ func TestWS_MessageRelayeALAutrePartie(t *testing.T) {
 func TestWS_ExpediteurNonUsurpable(t *testing.T) {
 	base, jeu := serveurTest(t)
 
-	client, _, err := connecter(t, base, jeu.SessionID, jetonClient(t, jeu.ClientID))
+	client, _, err := connecter(t, base, jeu.SessionID, jetonDestinataire(t, jeu.DestinataireID))
 	if err != nil {
 		t.Fatalf("connexion client: %v", err)
 	}
@@ -247,7 +247,7 @@ func TestWS_ExpediteurNonUsurpable(t *testing.T) {
 
 	// Le rôle vient de la session, pas du message : sans cela n'importe qui
 	// pourrait se faire passer pour le livreur auprès du client.
-	if recu.Expediteur != string(masquage.RoleClient) {
+	if recu.Expediteur != string(masquage.RoleDestinataire) {
 		t.Errorf("expéditeur usurpé: %q", recu.Expediteur)
 	}
 	if recu.ID == nil || *recu.ID == faux {
@@ -262,7 +262,7 @@ func TestWS_MessagePersisteAvantRelais(t *testing.T) {
 	base, jeu := serveurTest(t)
 	pool := testdb.Ouvrir(t)
 
-	client, _, err := connecter(t, base, jeu.SessionID, jetonClient(t, jeu.ClientID))
+	client, _, err := connecter(t, base, jeu.SessionID, jetonDestinataire(t, jeu.DestinataireID))
 	if err != nil {
 		t.Fatalf("connexion client: %v", err)
 	}
@@ -290,7 +290,7 @@ func TestWS_MessageVideIgnore(t *testing.T) {
 	base, jeu := serveurTest(t)
 	pool := testdb.Ouvrir(t)
 
-	client, _, err := connecter(t, base, jeu.SessionID, jetonClient(t, jeu.ClientID))
+	client, _, err := connecter(t, base, jeu.SessionID, jetonDestinataire(t, jeu.DestinataireID))
 	if err != nil {
 		t.Fatalf("connexion client: %v", err)
 	}
@@ -321,7 +321,7 @@ func TestWS_MessageTronqueALaLimite(t *testing.T) {
 	base, jeu := serveurTest(t)
 	pool := testdb.Ouvrir(t)
 
-	client, _, err := connecter(t, base, jeu.SessionID, jetonClient(t, jeu.ClientID))
+	client, _, err := connecter(t, base, jeu.SessionID, jetonDestinataire(t, jeu.DestinataireID))
 	if err != nil {
 		t.Fatalf("connexion client: %v", err)
 	}
@@ -354,7 +354,7 @@ func TestWS_SignalingRelayeMaisNonPersiste(t *testing.T) {
 	base, jeu := serveurTest(t)
 	pool := testdb.Ouvrir(t)
 
-	client, _, err := connecter(t, base, jeu.SessionID, jetonClient(t, jeu.ClientID))
+	client, _, err := connecter(t, base, jeu.SessionID, jetonDestinataire(t, jeu.DestinataireID))
 	if err != nil {
 		t.Fatalf("connexion client: %v", err)
 	}
@@ -376,7 +376,7 @@ func TestWS_SignalingRelayeMaisNonPersiste(t *testing.T) {
 	if !json.Valid(recu.Signal) || string(recu.Signal) != `{"sdp":"v=0 test"}` {
 		t.Errorf("le signal doit être relayé intact, obtenu %s", recu.Signal)
 	}
-	if recu.Expediteur != string(masquage.RoleClient) {
+	if recu.Expediteur != string(masquage.RoleDestinataire) {
 		t.Errorf("expéditeur = %q", recu.Expediteur)
 	}
 
@@ -395,7 +395,7 @@ func TestWS_TypeInconnuIgnore(t *testing.T) {
 	base, jeu := serveurTest(t)
 	pool := testdb.Ouvrir(t)
 
-	client, _, err := connecter(t, base, jeu.SessionID, jetonClient(t, jeu.ClientID))
+	client, _, err := connecter(t, base, jeu.SessionID, jetonDestinataire(t, jeu.DestinataireID))
 	if err != nil {
 		t.Fatalf("connexion client: %v", err)
 	}
@@ -420,7 +420,7 @@ func TestWS_TypeInconnuIgnore(t *testing.T) {
 func TestWS_JsonInvalideNeFermePasLaSocket(t *testing.T) {
 	base, jeu := serveurTest(t)
 
-	client, _, err := connecter(t, base, jeu.SessionID, jetonClient(t, jeu.ClientID))
+	client, _, err := connecter(t, base, jeu.SessionID, jetonDestinataire(t, jeu.DestinataireID))
 	if err != nil {
 		t.Fatalf("connexion client: %v", err)
 	}
@@ -454,7 +454,7 @@ func TestWS_ConnexionRefuseeSiSessionExpiree(t *testing.T) {
 		t.Fatalf("clôture: %v", err)
 	}
 
-	conn, _, err := connecter(t, base, jeu.SessionID, jetonClient(t, jeu.ClientID))
+	conn, _, err := connecter(t, base, jeu.SessionID, jetonDestinataire(t, jeu.DestinataireID))
 	if err != nil {
 		return // refusé au handshake
 	}
@@ -467,7 +467,7 @@ func TestWS_EnvoiRefuseSiSessionExpirePendantLaConnexion(t *testing.T) {
 	pool := testdb.Ouvrir(t)
 	base, jeu := serveurTest(t)
 
-	client, _, err := connecter(t, base, jeu.SessionID, jetonClient(t, jeu.ClientID))
+	client, _, err := connecter(t, base, jeu.SessionID, jetonDestinataire(t, jeu.DestinataireID))
 	if err != nil {
 		t.Fatalf("connexion client: %v", err)
 	}
@@ -531,11 +531,11 @@ func TestWS_PasDeFuiteEntreConversations(t *testing.T) {
 	base, jeu := serveurTest(t)
 	_ = rdb
 
-	client, _, err := connecter(t, base, jeu.SessionID, jetonClient(t, jeu.ClientID))
+	client, _, err := connecter(t, base, jeu.SessionID, jetonDestinataire(t, jeu.DestinataireID))
 	if err != nil {
 		t.Fatalf("connexion: %v", err)
 	}
-	espion, _, err := connecter(t, base, autre.SessionID, jetonClient(t, autre.ClientID))
+	espion, _, err := connecter(t, base, autre.SessionID, jetonDestinataire(t, autre.DestinataireID))
 	if err != nil {
 		t.Fatalf("connexion seconde conversation: %v", err)
 	}

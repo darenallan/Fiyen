@@ -22,7 +22,7 @@ export type StatutCourse =
 
 export interface Course {
   id: string;
-  client_id: string;
+  destinataire_id: string;
   /** Volontairement absent de l'affichage : le client ne doit pas identifier son livreur. */
   livreur_id: string | null;
   statut: StatutCourse;
@@ -36,14 +36,14 @@ export interface SessionMasquage {
   session_id: string;
   course_id: string;
   expire_at: string;
-  role: 'client' | 'livreur';
+  role: 'destinataire' | 'livreur';
   numero_virtuel?: string;
   active: boolean;
 }
 
 export interface MessageMasque {
   id: string;
-  expediteur: 'client' | 'livreur';
+  expediteur: 'destinataire' | 'livreur';
   contenu: string;
   created_at: string;
 }
@@ -189,8 +189,8 @@ export const api = {
     }),
 
   inscription: (nom: string, telephone: string, motDePasse: string) =>
-    requete<{ token: string; refresh_token: string; client_id: string }>(
-      '/api/auth/register-client',
+    requete<{ token: string; refresh_token: string; destinataire_id: string }>(
+      '/api/auth/register-destinataire',
       {
         method: 'POST',
         body: JSON.stringify({ nom, telephone, mot_de_passe: motDePasse }),

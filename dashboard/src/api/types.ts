@@ -23,7 +23,7 @@ export interface Livreur {
 export interface Course {
   id: string;
   compagnie_id: string;
-  client_id: string;
+  destinataire_id: string;
   livreur_id: string | null;
   statut: StatutCourse;
   adresse_depart: string;
@@ -46,4 +46,33 @@ export interface ConfigTarifaire {
   devise: string;
   active_a_partir: string;
   created_at: string;
+}
+
+/**
+ * Commande déposée par une entreprise cliente et pas encore assignée.
+ *
+ * Distincte de `Course` : elle porte ce que le partenaire a saisi (repères,
+ * description du colis, consigne) et ce qui l'identifie côté opérateur (le nom
+ * de l'entreprise, celui de la personne qui a commandé).
+ */
+export interface CommandeEntrante {
+  id: string;
+  /** Numéro court dictable au téléphone, « FY-1042 ». */
+  numero: string;
+  statut: StatutCourse;
+  adresse_depart: string;
+  repere_depart?: string;
+  adresse_arrivee: string;
+  repere_arrivee?: string;
+  description_colis?: string;
+  instructions?: string;
+  destinataire_nom: string;
+  latitude_depart?: number;
+  longitude_depart?: number;
+  latitude_arrivee?: number;
+  longitude_arrivee?: number;
+  cree_par_nom?: string;
+  partenaire_nom: string;
+  created_at: string;
+  updated_at: string;
 }

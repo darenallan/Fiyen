@@ -1,0 +1,176 @@
+/* ==========================================================================
+   File des commandes entrantes
+   ========================================================================== */
+
+.file-entrantes {
+  display: grid;
+  gap: 18px;
+}
+
+.commande-entrante {
+  padding: 20px 22px;
+}
+
+.entrante-tete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* Le numéro court est en monospace : c'est un identifiant qu'on lit chiffre à
+   chiffre au téléphone quand le partenaire rappelle, pas un titre. */
+.numero-course {
+  display: block;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--or-texte-clair);
+}
+
+.entrante-partenaire {
+  display: block;
+  font-family: var(--titre);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--vert);
+  margin-top: 2px;
+}
+
+/* Une attente qui dure porte la couleur rust *et* le mot « En attente » :
+   l'urgence reste lisible sans percevoir la teinte. */
+.badge.attente-longue {
+  color: var(--rust-texte-sombre);
+  background: rgba(217, 88, 31, 0.1);
+}
+
+.badge.attente-longue .pastille {
+  background: currentColor;
+  animation: pulsation 1.8s ease-in-out infinite;
+}
+
+/* ------------------------------- Trajet ---------------------------------- */
+
+.entrante-trajet {
+  margin-bottom: 14px;
+}
+
+.entrante-point {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.entrante-puce {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.entrante-puce.depart {
+  background: var(--vert-3);
+}
+
+.entrante-puce.arrivee {
+  background: var(--rust);
+}
+
+/* Trait pointillé entre les deux points : rend le trajet lisible d'un coup,
+   là où deux blocs empilés se liraient comme une simple liste. */
+.entrante-liaison {
+  width: 0;
+  height: 18px;
+  margin-left: 5px;
+  border-left: 2px dashed var(--creme-2);
+}
+
+.entrante-adresse {
+  margin: 0;
+  font-weight: 600;
+}
+
+.entrante-point p.muted-inline {
+  margin: 2px 0 0;
+  font-size: 13px;
+}
+
+/* ------------------------------- Détail ---------------------------------- */
+
+.entrante-detail {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 18px;
+  margin: 0 0 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--creme-2);
+  font-size: 14px;
+}
+
+.entrante-detail dt {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tx-clair-muet);
+  padding-top: 3px;
+}
+
+.entrante-detail dd {
+  margin: 0;
+}
+
+/* ------------------------------- Actions --------------------------------- */
+
+.entrante-pied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  border-top: 1px solid var(--creme-2);
+}
+
+.entrante-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.entrante-actions select {
+  min-width: 190px;
+}
+
+.entrante-actions button {
+  width: auto;
+  white-space: nowrap;
+}
+
+/* ----------------------------- Compteur nav ------------------------------ */
+
+.compteur-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  margin-left: 8px;
+  border-radius: 11px;
+  background: var(--or);
+  color: var(--vert);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge.attente-longue .pastille {
+    animation: none;
+  }
+}

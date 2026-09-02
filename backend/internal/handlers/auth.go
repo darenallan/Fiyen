@@ -16,7 +16,7 @@ import (
 )
 
 // emettreJetons produit la paire jeton d'accès + jeton de renouvellement.
-// Les trois points d'entrée (inscription compagnie, inscription client,
+// Les trois points d'entrée (inscription compagnie, inscription destinataire,
 // connexion) passent par ici pour que la durée de vie reste cohérente.
 func (d *Deps) emettreJetons(ctx context.Context, claims middleware.Claims) (string, string, error) {
 	acces, err := middleware.GenererToken(d.Config.JWTSecret, d.Config.JWTDureeMinutes, claims)
@@ -107,7 +107,7 @@ type loginBody struct {
 	MotDePasse string `json:"mot_de_passe"`
 }
 
-// Login authentifie un compte quel que soit son rôle (compagnie, livreur, client).
+// Login authentifie un compte quel que soit son rôle.
 func (d *Deps) Login(c *fiber.Ctx) error {
 	var body loginBody
 	if err := c.BodyParser(&body); err != nil {
@@ -120,18 +120,22 @@ func (d *Deps) Login(c *fiber.Ctx) error {
 	telephoneHash := util.HashTelephone(body.Telephone)
 
 	var (
-		utilisateurID uuid.UUID
-		role          models.Role
-		mdpHash       string
-		compagnieID   *uuid.UUID
-		livreurID     *uuid.UUID
-		clientID      *uuid.UUID
+		utilisateurID  uuid.UUID
+		role           models.Role
+		mdpHash        string
+		compagnieID    *uuid.UUID
+		livreurID      *uuid.UUID
+		destinataireID *uuid.UUID
+		partenaireID   *uuid.UUID
+		actif          bool
 	)
 	err := d.DB.QueryRow(c.Context(),
-		`SELECT id, role, mot_de_passe_hash, compagnie_id, livreur_id, client_id
+		`SELECT id, role, mot_de_passe_hash, compagnie_id, livreur_id, destinataire_id,
+		        partenaire_id, actif
 		 FROM utilisateurs WHERE telephone_hash = $1`,
 		telephoneHash,
-	).Scan(&utilisateurID, &role, &mdpHash, &compagnieID, &livreurID, &clientID)
+	).Scan(&utilisateurID, &role, &mdpHash, &compagnieID, &livreurID, &destinataireID,
+		&partenaireID, &actif)
 
 	if err == pgx.ErrNoRows || !util.VerifierMotDePasse(mdpHash, body.MotDePasse) {
 		return fiber.NewError(fiber.StatusUnauthorized, "identifiants invalides")
@@ -139,13 +143,22 @@ func (d *Deps) Login(c *fiber.Ctx) error {
 	if err != nil && err != pgx.ErrNoRows {
 		return fiber.NewError(fiber.StatusInternalServerError, "erreur interne")
 	}
+	if !actif {
+		// Même message qu'un mot de passe faux : un compte suspendu ne doit pas
+		// se distinguer d'un compte inexistant pour qui tente sa chance.
+		return fiber.NewError(fiber.StatusUnauthorized, "identifiants invalides")
+	}
+	if err := d.refuserSiPartenaireSuspendu(c.Context(), partenaireID); err != nil {
+		return err
+	}
 
 	token, refresh, err := d.emettreJetons(c.Context(), middleware.Claims{
-		UtilisateurID: utilisateurID,
-		Role:          role,
-		CompagnieID:   compagnieID,
-		LivreurID:     livreurID,
-		ClientID:      clientID,
+		UtilisateurID:  utilisateurID,
+		Role:           role,
+		CompagnieID:    compagnieID,
+		LivreurID:      livreurID,
+		DestinataireID: destinataireID,
+		PartenaireID:   partenaireID,
 	})
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "erreur interne")
@@ -154,15 +167,16 @@ func (d *Deps) Login(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"token": token, "refresh_token": refresh, "role": role})
 }
 
-type registerClientBody struct {
+type registerDestinataireBody struct {
 	Nom        string `json:"nom"`
 	Telephone  string `json:"telephone"`
 	MotDePasse string `json:"mot_de_passe"`
 }
 
-// RegisterClient crée un compte client final (auto-inscription depuis l'app client).
-func (d *Deps) RegisterClient(c *fiber.Ctx) error {
-	var body registerClientBody
+// RegisterDestinataire crée le compte de celui qui reçoit le colis
+// (auto-inscription depuis l'app destinataire).
+func (d *Deps) RegisterDestinataire(c *fiber.Ctx) error {
+	var body registerDestinataireBody
 	if err := c.BodyParser(&body); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "corps de requête invalide")
 	}
@@ -183,19 +197,19 @@ func (d *Deps) RegisterClient(c *fiber.Ctx) error {
 	}
 	defer tx.Rollback(ctx)
 
-	var clientID uuid.UUID
+	var destinataireID uuid.UUID
 	if err := tx.QueryRow(ctx,
-		`INSERT INTO clients (nom, telephone_hash) VALUES ($1, $2) RETURNING id`,
+		`INSERT INTO destinataires (nom, telephone_hash) VALUES ($1, $2) RETURNING id`,
 		body.Nom, telephoneHash,
-	).Scan(&clientID); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "création client échouée")
+	).Scan(&destinataireID); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "création du destinataire échouée")
 	}
 
 	var utilisateurID uuid.UUID
 	if err := tx.QueryRow(ctx,
-		`INSERT INTO utilisateurs (role, telephone_hash, mot_de_passe_hash, client_id)
-		 VALUES ('client', $1, $2, $3) RETURNING id`,
-		telephoneHash, mdpHash, clientID,
+		`INSERT INTO utilisateurs (role, telephone_hash, mot_de_passe_hash, destinataire_id)
+		 VALUES ('destinataire', $1, $2, $3) RETURNING id`,
+		telephoneHash, mdpHash, destinataireID,
 	).Scan(&utilisateurID); err != nil {
 		return fiber.NewError(fiber.StatusConflict, "un compte existe déjà pour ce numéro")
 	}
@@ -205,18 +219,18 @@ func (d *Deps) RegisterClient(c *fiber.Ctx) error {
 	}
 
 	token, refresh, err := d.emettreJetons(ctx, middleware.Claims{
-		UtilisateurID: utilisateurID,
-		Role:          models.RoleClient,
-		ClientID:      &clientID,
+		UtilisateurID:  utilisateurID,
+		Role:           models.RoleDestinataire,
+		DestinataireID: &destinataireID,
 	})
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "erreur interne")
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"token":         token,
-		"refresh_token": refresh,
-		"client_id":     clientID,
+		"token":           token,
+		"refresh_token":   refresh,
+		"destinataire_id": destinataireID,
 	})
 }
 
@@ -254,24 +268,39 @@ func (d *Deps) Refresh(c *fiber.Ctx) error {
 	}
 
 	var (
-		role        models.Role
-		compagnieID *uuid.UUID
-		livreurID   *uuid.UUID
-		clientID    *uuid.UUID
+		role           models.Role
+		compagnieID    *uuid.UUID
+		livreurID      *uuid.UUID
+		destinataireID *uuid.UUID
+		partenaireID   *uuid.UUID
+		actif          bool
 	)
 	if err := d.DB.QueryRow(ctx,
-		`SELECT role, compagnie_id, livreur_id, client_id FROM utilisateurs WHERE id = $1`,
+		`SELECT role, compagnie_id, livreur_id, destinataire_id, partenaire_id, actif
+		 FROM utilisateurs WHERE id = $1`,
 		utilisateurID,
-	).Scan(&role, &compagnieID, &livreurID, &clientID); err != nil {
+	).Scan(&role, &compagnieID, &livreurID, &destinataireID, &partenaireID, &actif); err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "session invalide")
+	}
+
+	// Un compte suspendu depuis l'émission du jeton ne doit pas survivre au
+	// renouvellement : c'est tout l'intérêt de relire les droits en base.
+	if !actif {
+		_ = auth.RevoquerTout(ctx, d.DB, utilisateurID)
+		return fiber.NewError(fiber.StatusUnauthorized, "session invalide")
+	}
+	if err := d.refuserSiPartenaireSuspendu(ctx, partenaireID); err != nil {
+		_ = auth.RevoquerTout(ctx, d.DB, utilisateurID)
 		return fiber.NewError(fiber.StatusUnauthorized, "session invalide")
 	}
 
 	token, err := middleware.GenererToken(d.Config.JWTSecret, d.Config.JWTDureeMinutes, middleware.Claims{
-		UtilisateurID: utilisateurID,
-		Role:          role,
-		CompagnieID:   compagnieID,
-		LivreurID:     livreurID,
-		ClientID:      clientID,
+		UtilisateurID:  utilisateurID,
+		Role:           role,
+		CompagnieID:    compagnieID,
+		LivreurID:      livreurID,
+		DestinataireID: destinataireID,
+		PartenaireID:   partenaireID,
 	})
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "erreur interne")

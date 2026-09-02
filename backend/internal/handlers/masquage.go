@@ -32,7 +32,7 @@ func (d *Deps) ObtenirSessionMasquage(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "identifiant de course invalide")
 	}
 
-	session, err := masquage.ResoudreSession(c.Context(), d.DB, courseID, claims.ClientID, claims.LivreurID)
+	session, err := masquage.ResoudreSession(c.Context(), d.DB, courseID, claims.DestinataireID, claims.LivreurID)
 	if err != nil {
 		return erreurMasquage(err)
 	}
@@ -41,7 +41,7 @@ func (d *Deps) ObtenirSessionMasquage(c *fiber.Ctx) error {
 }
 
 // ListerMessagesMasques (client ou livreur assigné) — historique du canal.
-// L'historique reste lisible après expiration (le client doit pouvoir relire
+// L'historique reste lisible après expiration (le destinataire doit pouvoir relire
 // l'échange), mais plus rien ne peut y être ajouté.
 func (d *Deps) ListerMessagesMasques(c *fiber.Ctx) error {
 	claims := middleware.ClaimsDe(c)
@@ -50,7 +50,7 @@ func (d *Deps) ListerMessagesMasques(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "identifiant de session invalide")
 	}
 
-	session, err := masquage.ResoudreSessionParID(c.Context(), d.DB, sessionID, claims.ClientID, claims.LivreurID)
+	session, err := masquage.ResoudreSessionParID(c.Context(), d.DB, sessionID, claims.DestinataireID, claims.LivreurID)
 	if err != nil {
 		return erreurMasquage(err)
 	}

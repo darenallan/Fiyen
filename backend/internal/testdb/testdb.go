@@ -133,13 +133,13 @@ func OuvrirRedis(t *testing.T) *redis.Client {
 
 // Jeu regroupe les identifiants d'un décor de test isolé.
 type Jeu struct {
-	CompagnieID uuid.UUID
-	ClientID    uuid.UUID
-	AutreClient uuid.UUID
-	LivreurID   uuid.UUID
-	AutreLivreu uuid.UUID
-	CourseID    uuid.UUID
-	SessionID   uuid.UUID
+	CompagnieID       uuid.UUID
+	DestinataireID    uuid.UUID
+	AutreDestinataire uuid.UUID
+	LivreurID         uuid.UUID
+	AutreLivreu       uuid.UUID
+	CourseID          uuid.UUID
+	SessionID         uuid.UUID
 }
 
 // CreerJeu monte un décor complet : une compagnie, deux clients, deux livreurs,
@@ -172,16 +172,16 @@ func CreerJeu(t *testing.T, pool *pgxpool.Pool, expireAt time.Time) Jeu {
 		nettoyer := context.Background()
 		_, _ = pool.Exec(nettoyer, `DELETE FROM compagnies WHERE id = $1`, j.CompagnieID)
 		// Les clients ne dépendent pas de la compagnie : ils survivraient à la
-		// cascade, et `courses.client_id` n'a pas de ON DELETE CASCADE — d'où
+		// cascade, et `courses.destinataire_id` n'a pas de ON DELETE CASCADE — d'où
 		// cette suppression après celle des courses.
-		_, _ = pool.Exec(nettoyer, `DELETE FROM clients WHERE id = ANY($1)`,
-			[]uuid.UUID{j.ClientID, j.AutreClient})
+		_, _ = pool.Exec(nettoyer, `DELETE FROM destinataires WHERE id = ANY($1)`,
+			[]uuid.UUID{j.DestinataireID, j.AutreDestinataire})
 	})
 
-	exec(`INSERT INTO clients (nom, telephone_hash) VALUES ($1, $2) RETURNING id`,
-		&j.ClientID, "Cliente test "+suffixe, "hash-client-"+suffixe)
-	exec(`INSERT INTO clients (nom, telephone_hash) VALUES ($1, $2) RETURNING id`,
-		&j.AutreClient, "Tiers test "+suffixe, "hash-tiers-"+suffixe)
+	exec(`INSERT INTO destinataires (nom, telephone_hash) VALUES ($1, $2) RETURNING id`,
+		&j.DestinataireID, "Cliente test "+suffixe, "hash-client-"+suffixe)
+	exec(`INSERT INTO destinataires (nom, telephone_hash) VALUES ($1, $2) RETURNING id`,
+		&j.AutreDestinataire, "Tiers test "+suffixe, "hash-tiers-"+suffixe)
 
 	exec(`INSERT INTO livreurs (compagnie_id, nom, telephone_hash, statut)
 	      VALUES ($1, $2, $3, 'dispo') RETURNING id`,
@@ -190,10 +190,19 @@ func CreerJeu(t *testing.T, pool *pgxpool.Pool, expireAt time.Time) Jeu {
 	      VALUES ($1, $2, $3, 'dispo') RETURNING id`,
 		&j.AutreLivreu, j.CompagnieID, "Autre livreur "+suffixe, "hash-livreur2-"+suffixe)
 
-	exec(`INSERT INTO courses (compagnie_id, client_id, livreur_id, statut,
-	                           adresse_depart, adresse_arrivee)
-	      VALUES ($1, $2, $3, 'assignee', $4, $5) RETURNING id`,
-		&j.CourseID, j.CompagnieID, j.ClientID, j.LivreurID,
+	// Le numéro passe par le compteur de la compagnie, comme en production :
+	// `courses.numero` est NOT NULL, et un décor qui contournerait la règle
+	// masquerait un handler qui l'oublie. La CTE modifiante fait l'incrément et
+	// l'insertion en une seule instruction, donc atomiquement.
+	exec(`WITH n AS (
+	          UPDATE compagnies SET compteur_courses = compteur_courses + 1
+	          WHERE id = $1 RETURNING compteur_courses
+	      )
+	      INSERT INTO courses (compagnie_id, destinataire_id, livreur_id, statut,
+	                           adresse_depart, adresse_arrivee, numero)
+	      SELECT $1, $2, $3, 'assignee', $4, $5, n.compteur_courses FROM n
+	      RETURNING id`,
+		&j.CourseID, j.CompagnieID, j.DestinataireID, j.LivreurID,
 		"Marché de Rood Woko", "Zone du Bois")
 
 	exec(`INSERT INTO sessions_masquage (course_id, expire_at) VALUES ($1, $2) RETURNING id`,

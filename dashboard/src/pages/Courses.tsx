@@ -19,7 +19,7 @@ export function Courses() {
   const [filtre, setFiltre] = useState<string>('');
   const [recherche, setRecherche] = useState('');
 
-  const [telephoneClient, setTelephoneClient] = useState('');
+  const [telephoneDestinataire, setTelephoneDestinataire] = useState('');
   const [adresseDepart, setAdresseDepart] = useState('');
   const [adresseArrivee, setAdresseArrivee] = useState('');
   const [creationEnCours, setCreationEnCours] = useState(false);
@@ -61,21 +61,21 @@ export function Courses() {
     setErreurCreation(null);
     setCreationEnCours(true);
     try {
-      const client = await api.get<{ id: string; nom: string }>(
-        `/api/clients/recherche?telephone=${encodeURIComponent(telephoneClient)}`,
+      const destinataire = await api.get<{ id: string; nom: string }>(
+        `/api/destinataires/recherche?telephone=${encodeURIComponent(telephoneDestinataire)}`,
       );
       await api.post('/api/courses/', {
-        client_id: client.id,
+        destinataire_id: destinataire.id,
         adresse_depart: adresseDepart,
         adresse_arrivee: adresseArrivee,
       });
-      setTelephoneClient('');
+      setTelephoneDestinataire('');
       setAdresseDepart('');
       setAdresseArrivee('');
       await chargerCourses();
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) {
-        setErreurCreation("Aucun client trouvé pour ce numéro — le client doit d'abord s'inscrire.");
+        setErreurCreation("Aucun destinataire trouvé pour ce numéro — il doit d'abord créer son compte.");
       } else {
         setErreurCreation(err instanceof ApiError ? err.message : 'Création impossible');
       }
@@ -115,11 +115,11 @@ export function Courses() {
         <h2>Créer une course</h2>
         <form onSubmit={onSubmit} style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <label>
-            Téléphone du client
+            Téléphone du destinataire
             <input
               type="tel"
-              value={telephoneClient}
-              onChange={(e) => setTelephoneClient(e.target.value)}
+              value={telephoneDestinataire}
+              onChange={(e) => setTelephoneDestinataire(e.target.value)}
               placeholder="+22670000000"
               required
               style={{ display: 'block', marginTop: 4 }}

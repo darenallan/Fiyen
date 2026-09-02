@@ -1,4 +1,4 @@
-// Package masquage porte le canal de communication client ↔ livreur.
+// Package masquage porte le canal de communication destinataire ↔ livreur.
 //
 // Garantie centrale : aucun numéro de téléphone réel ne transite, et le client
 // ne connaît jamais le `livreur_id`. Seul le `session_id` circule côté front,
@@ -21,8 +21,8 @@ import (
 type Role string
 
 const (
-	RoleClient  Role = "client"
-	RoleLivreur Role = "livreur"
+	RoleDestinataire Role = "destinataire"
+	RoleLivreur      Role = "livreur"
 )
 
 var (
@@ -57,28 +57,28 @@ type Message struct {
 // Autorisation résout la session d'une course pour un demandeur donné, en
 // vérifiant qu'il en est bien l'une des deux extrémités.
 //
-// clientID et livreurID viennent du JWT : l'appelant ne peut pas se déclarer
+// destinataireID et livreurID viennent du JWT : l'appelant ne peut pas se déclarer
 // participant d'une conversation qui n'est pas la sienne.
 func ResoudreSession(
 	ctx context.Context,
 	pool *pgxpool.Pool,
 	courseID uuid.UUID,
-	clientID, livreurID *uuid.UUID,
+	destinataireID, livreurID *uuid.UUID,
 ) (*Session, error) {
 	var (
-		sessionID       uuid.UUID
-		expireAt        time.Time
-		numeroVirtuel   *string
-		courseClientID  uuid.UUID
-		courseLivreurID *uuid.UUID
+		sessionID            uuid.UUID
+		expireAt             time.Time
+		numeroVirtuel        *string
+		courseDestinataireID uuid.UUID
+		courseLivreurID      *uuid.UUID
 	)
 
 	err := pool.QueryRow(ctx, `
-		SELECT s.id, s.expire_at, s.numero_virtuel, c.client_id, c.livreur_id
+		SELECT s.id, s.expire_at, s.numero_virtuel, c.destinataire_id, c.livreur_id
 		FROM sessions_masquage s
 		JOIN courses c ON c.id = s.course_id
 		WHERE s.course_id = $1
-	`, courseID).Scan(&sessionID, &expireAt, &numeroVirtuel, &courseClientID, &courseLivreurID)
+	`, courseID).Scan(&sessionID, &expireAt, &numeroVirtuel, &courseDestinataireID, &courseLivreurID)
 
 	if err == pgx.ErrNoRows {
 		return nil, ErrSessionIntrouvable
@@ -89,8 +89,8 @@ func ResoudreSession(
 
 	var role Role
 	switch {
-	case clientID != nil && *clientID == courseClientID:
-		role = RoleClient
+	case destinataireID != nil && *destinataireID == courseDestinataireID:
+		role = RoleDestinataire
 	case livreurID != nil && courseLivreurID != nil && *livreurID == *courseLivreurID:
 		role = RoleLivreur
 	default:
@@ -113,7 +113,7 @@ func ResoudreSessionParID(
 	ctx context.Context,
 	pool *pgxpool.Pool,
 	sessionID uuid.UUID,
-	clientID, livreurID *uuid.UUID,
+	destinataireID, livreurID *uuid.UUID,
 ) (*Session, error) {
 	var courseID uuid.UUID
 	err := pool.QueryRow(ctx, `SELECT course_id FROM sessions_masquage WHERE id = $1`, sessionID).
@@ -124,7 +124,7 @@ func ResoudreSessionParID(
 	if err != nil {
 		return nil, fmt.Errorf("lecture session: %w", err)
 	}
-	return ResoudreSession(ctx, pool, courseID, clientID, livreurID)
+	return ResoudreSession(ctx, pool, courseID, destinataireID, livreurID)
 }
 
 // EnregistrerMessage refuse d'écrire dans un canal expiré : une course terminée

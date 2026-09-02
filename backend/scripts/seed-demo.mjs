@@ -1,5 +1,5 @@
 /**
- * Jeu de démonstration : une compagnie, deux livreurs, un client, deux courses.
+ * Jeu de démonstration : une compagnie, deux livreurs, une destinataire, deux courses.
  * Permet de se connecter aux trois interfaces sans créer de comptes à la main.
  *
  *   node backend/scripts/seed-demo.mjs
@@ -66,12 +66,12 @@ function reinitialiser() {
   const hash = (tel) => createHash('sha256').update(tel).digest('hex');
   const hashes = Object.values(TEL).map((t) => `'${hash(t)}'`).join(',');
 
-  // Les compagnies et clients suppriment en cascade leurs livreurs, courses,
+  // Les compagnies et destinataires suppriment en cascade leurs livreurs, courses,
   // comptes et sessions de masquage.
   psql(`DELETE FROM compagnies WHERE id IN (
           SELECT compagnie_id FROM utilisateurs
           WHERE telephone_hash IN (${hashes}) AND compagnie_id IS NOT NULL)`);
-  psql(`DELETE FROM clients WHERE telephone_hash IN (${hashes})`);
+  psql(`DELETE FROM destinataires WHERE telephone_hash IN (${hashes})`);
   psql(`DELETE FROM utilisateurs WHERE telephone_hash IN (${hashes})`);
 }
 
@@ -118,7 +118,7 @@ async function main() {
   console.log('  Salif Traoré + Aminata Zongo');
 
   console.log('== Client ==');
-  const client = await appel('POST', '/api/auth/register-client', {
+  const client = await appel('POST', '/api/auth/register-destinataire', {
     nom: 'Awa Ouédraogo',
     telephone: TEL.client,
     mot_de_passe: MDP,
@@ -132,7 +132,7 @@ async function main() {
     'POST',
     '/api/courses/',
     {
-      client_id: client.client_id,
+      destinataire_id: client.destinataire_id,
       adresse_depart: 'Pharmacie Nabi Yar, Gounghin',
       adresse_arrivee: 'Cité An III, porte 42',
     },
@@ -157,7 +157,7 @@ async function main() {
     'POST',
     '/api/courses/',
     {
-      client_id: client.client_id,
+      destinataire_id: client.destinataire_id,
       adresse_depart: 'Marché de Rood Woko',
       adresse_arrivee: 'Ouaga 2000, secteur 15',
     },

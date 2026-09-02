@@ -55,6 +55,9 @@
   /* --- Accents ---------------------------------------------------------- */
   --rust: #d9581f; /* surface uniquement */
   --rust-texte: #f0834e; /* variante lisible sur vert : 5,23:1 */
+  /* Variante lisible sur crème : le rust pur n'y donne que 3,04:1.
+     Utilisée pour les alertes d'attente de la file entrante. */
+  --rust-texte-sombre: #9c3d0c; /* 5,29:1 sur le fond du badge */
   --succes: #4f7a5e;
   --succes-texte: #3b6349; /* variante lisible sur crème : 5,97:1 */
   --succes-fond: rgba(107, 143, 94, 0.18);
@@ -1307,4 +1310,22 @@ tbody tr:last-child td { border-bottom: none; }
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--tx-clair-muet);
+}
+
+/* Code d'invitation d'un collaborateur.
+   Affiché une seule fois, il doit être recopié sans erreur : d'où le
+   monospace, l'interlettrage large et la taille — un « 0 » et un « O » mal
+   distingués coûteraient un appel au support. */
+.code-invitation {
+  font-family: var(--mono);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  color: var(--vert);
+  background: var(--creme-2);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 12px 0;
+  text-align: center;
+  user-select: all;
 }

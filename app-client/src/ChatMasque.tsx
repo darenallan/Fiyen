@@ -156,7 +156,7 @@ export function ChatMasque({ courseId }: { courseId: string }) {
               </p>
             ) : (
               messages.map((m) => (
-                <div key={m.id} className={`bulle ${m.expediteur === 'client' ? 'moi' : 'lui'}`}>
+                <div key={m.id} className={`bulle ${m.expediteur === 'destinataire' ? 'moi' : 'lui'}`}>
                   {m.contenu}
                 </div>
               ))

@@ -33,7 +33,7 @@ type evenementCanal struct {
 
 var typesSignaling = map[string]bool{"offre": true, "reponse": true, "ice": true}
 
-// MasquageWS — canal de contact client ↔ livreur d'une course.
+// MasquageWS — canal de contact destinataire ↔ livreur d'une course.
 //
 // Le numéro réel des deux parties n'entre jamais dans ce canal : seul le
 // session_id identifie la conversation, et l'autorisation est revérifiée à la
@@ -52,7 +52,7 @@ func (d *Deps) MasquageWS(conn *websocket.Conn) {
 	}
 
 	ctx := context.Background()
-	session, err := masquage.ResoudreSessionParID(ctx, d.DB, sessionID, claims.ClientID, claims.LivreurID)
+	session, err := masquage.ResoudreSessionParID(ctx, d.DB, sessionID, claims.DestinataireID, claims.LivreurID)
 	if err != nil {
 		_ = conn.WriteMessage(websocket.CloseMessage,
 			websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "accès refusé"))
@@ -91,7 +91,7 @@ func (d *Deps) MasquageWS(conn *websocket.Conn) {
 
 		// L'expiration est revérifiée à chaque envoi : une course peut se
 		// terminer alors que la socket est encore ouverte.
-		frais, err := masquage.ResoudreSessionParID(ctx, d.DB, sessionID, claims.ClientID, claims.LivreurID)
+		frais, err := masquage.ResoudreSessionParID(ctx, d.DB, sessionID, claims.DestinataireID, claims.LivreurID)
 		if err != nil || !frais.Active {
 			_ = conn.WriteMessage(websocket.CloseMessage,
 				websocket.FormatCloseMessage(websocket.CloseNormalClosure, "canal fermé"))

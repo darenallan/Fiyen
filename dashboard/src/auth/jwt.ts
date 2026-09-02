@@ -1,9 +1,9 @@
 interface JwtClaims {
   utilisateur_id: string;
-  role: 'compagnie' | 'livreur' | 'client';
+  role: 'compagnie' | 'livreur' | 'destinataire';
   compagnie_id?: string;
   livreur_id?: string;
-  client_id?: string;
+  destinataire_id?: string;
   exp: number;
 }
 

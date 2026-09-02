@@ -14,7 +14,7 @@ import (
 )
 
 // Ces tests portent la garantie centrale du produit : aucun numéro réel ne
-// circule, le client n'apprend jamais l'identité de son livreur, et le canal
+// circule, le destinataire n'apprend jamais l'identité de son livreur, et le canal
 // se ferme avec la course. Ils étaient jusqu'ici vérifiés à la main — donc
 // reperdus à chaque modification.
 
@@ -22,16 +22,16 @@ func ptr(id uuid.UUID) *uuid.UUID { return &id }
 
 // --- Accès au canal -------------------------------------------------------
 
-func TestResoudreSession_ClientDeLaCourse(t *testing.T) {
+func TestResoudreSession_DestinataireDeLaCourse(t *testing.T) {
 	pool := testdb.Ouvrir(t)
 	j := testdb.CreerJeu(t, pool, time.Now().Add(time.Hour))
 
-	s, err := masquage.ResoudreSession(context.Background(), pool, j.CourseID, ptr(j.ClientID), nil)
+	s, err := masquage.ResoudreSession(context.Background(), pool, j.CourseID, ptr(j.DestinataireID), nil)
 	if err != nil {
-		t.Fatalf("le client de la course doit accéder à son canal: %v", err)
+		t.Fatalf("le destinataire de la course doit accéder à son canal: %v", err)
 	}
-	if s.Role != masquage.RoleClient {
-		t.Errorf("rôle = %q, attendu %q", s.Role, masquage.RoleClient)
+	if s.Role != masquage.RoleDestinataire {
+		t.Errorf("rôle = %q, attendu %q", s.Role, masquage.RoleDestinataire)
 	}
 	if s.ID != j.SessionID {
 		t.Errorf("session_id = %v, attendu %v", s.ID, j.SessionID)
@@ -51,13 +51,13 @@ func TestResoudreSession_LivreurAssigne(t *testing.T) {
 	}
 }
 
-func TestResoudreSession_AutreClientRefuse(t *testing.T) {
+func TestResoudreSession_AutreDestinataireRefuse(t *testing.T) {
 	pool := testdb.Ouvrir(t)
 	j := testdb.CreerJeu(t, pool, time.Now().Add(time.Hour))
 
-	_, err := masquage.ResoudreSession(context.Background(), pool, j.CourseID, ptr(j.AutreClient), nil)
+	_, err := masquage.ResoudreSession(context.Background(), pool, j.CourseID, ptr(j.AutreDestinataire), nil)
 	if !errors.Is(err, masquage.ErrAccesRefuse) {
-		t.Fatalf("un autre client doit être refusé, obtenu: %v", err)
+		t.Fatalf("un autre destinataire doit être refusé, obtenu: %v", err)
 	}
 }
 
@@ -77,8 +77,8 @@ func TestResoudreSession_SansIdentiteRefuse(t *testing.T) {
 	pool := testdb.Ouvrir(t)
 	j := testdb.CreerJeu(t, pool, time.Now().Add(time.Hour))
 
-	// C'est le cas d'un jeton de compagnie : ni client_id ni livreur_id. La
-	// compagnie voit la course, mais pas la conversation de ses clients.
+	// C'est le cas d'un jeton de compagnie : ni destinataire_id ni livreur_id. La
+	// compagnie voit la course, mais pas la conversation de ses destinataires.
 	_, err := masquage.ResoudreSession(context.Background(), pool, j.CourseID, nil, nil)
 	if !errors.Is(err, masquage.ErrAccesRefuse) {
 		t.Fatalf("un porteur sans identité doit être refusé, obtenu: %v", err)
@@ -101,11 +101,11 @@ func TestResoudreSessionParID_MemesControles(t *testing.T) {
 
 	// Le session_id est le seul identifiant que le front manipule : l'entrée
 	// par cet identifiant doit être aussi verrouillée que l'entrée par course.
-	if _, err := masquage.ResoudreSessionParID(ctx, pool, j.SessionID, ptr(j.ClientID), nil); err != nil {
-		t.Fatalf("le client doit accéder au canal par session_id: %v", err)
+	if _, err := masquage.ResoudreSessionParID(ctx, pool, j.SessionID, ptr(j.DestinataireID), nil); err != nil {
+		t.Fatalf("le destinataire doit accéder au canal par session_id: %v", err)
 	}
 
-	_, err := masquage.ResoudreSessionParID(ctx, pool, j.SessionID, ptr(j.AutreClient), nil)
+	_, err := masquage.ResoudreSessionParID(ctx, pool, j.SessionID, ptr(j.AutreDestinataire), nil)
 	if !errors.Is(err, masquage.ErrAccesRefuse) {
 		t.Fatalf("un tiers doit être refusé par session_id aussi, obtenu: %v", err)
 	}
@@ -126,7 +126,7 @@ func TestSession_NeRevelePasLIdentiteDeLAutrePartie(t *testing.T) {
 	pool := testdb.Ouvrir(t)
 	j := testdb.CreerJeu(t, pool, time.Now().Add(time.Hour))
 
-	s, err := masquage.ResoudreSession(context.Background(), pool, j.CourseID, ptr(j.ClientID), nil)
+	s, err := masquage.ResoudreSession(context.Background(), pool, j.CourseID, ptr(j.DestinataireID), nil)
 	if err != nil {
 		t.Fatalf("résolution: %v", err)
 	}
@@ -142,7 +142,7 @@ func TestSession_NeRevelePasLIdentiteDeLAutrePartie(t *testing.T) {
 		"livreur_id",
 	} {
 		if strings.Contains(json, interdit) {
-			t.Errorf("la session exposée au client contient %q: %s", interdit, json)
+			t.Errorf("la session exposée au destinataire contient %q: %s", interdit, json)
 		}
 	}
 }
@@ -151,7 +151,7 @@ func TestSession_NumeroVirtuelAbsentParDefaut(t *testing.T) {
 	pool := testdb.Ouvrir(t)
 	j := testdb.CreerJeu(t, pool, time.Now().Add(time.Hour))
 
-	s, err := masquage.ResoudreSession(context.Background(), pool, j.CourseID, ptr(j.ClientID), nil)
+	s, err := masquage.ResoudreSession(context.Background(), pool, j.CourseID, ptr(j.DestinataireID), nil)
 	if err != nil {
 		t.Fatalf("résolution: %v", err)
 	}
@@ -169,7 +169,7 @@ func TestSession_ActiveAvantExpiration(t *testing.T) {
 	pool := testdb.Ouvrir(t)
 	j := testdb.CreerJeu(t, pool, time.Now().Add(time.Hour))
 
-	s, err := masquage.ResoudreSession(context.Background(), pool, j.CourseID, ptr(j.ClientID), nil)
+	s, err := masquage.ResoudreSession(context.Background(), pool, j.CourseID, ptr(j.DestinataireID), nil)
 	if err != nil {
 		t.Fatalf("résolution: %v", err)
 	}
@@ -182,7 +182,7 @@ func TestSession_InactiveApresExpiration(t *testing.T) {
 	pool := testdb.Ouvrir(t)
 	j := testdb.CreerJeu(t, pool, time.Now().Add(-time.Minute))
 
-	s, err := masquage.ResoudreSession(context.Background(), pool, j.CourseID, ptr(j.ClientID), nil)
+	s, err := masquage.ResoudreSession(context.Background(), pool, j.CourseID, ptr(j.DestinataireID), nil)
 	if err != nil {
 		t.Fatalf("résolution: %v", err)
 	}
@@ -196,7 +196,7 @@ func TestEnregistrerMessage_RefuseSiExpiree(t *testing.T) {
 	j := testdb.CreerJeu(t, pool, time.Now().Add(-time.Minute))
 	ctx := context.Background()
 
-	s, err := masquage.ResoudreSession(ctx, pool, j.CourseID, ptr(j.ClientID), nil)
+	s, err := masquage.ResoudreSession(ctx, pool, j.CourseID, ptr(j.DestinataireID), nil)
 	if err != nil {
 		t.Fatalf("résolution: %v", err)
 	}
@@ -221,7 +221,7 @@ func TestListerMessages_HistoriqueLisibleApresExpiration(t *testing.T) {
 	j := testdb.CreerJeu(t, pool, time.Now().Add(time.Hour))
 	ctx := context.Background()
 
-	s, err := masquage.ResoudreSession(ctx, pool, j.CourseID, ptr(j.ClientID), nil)
+	s, err := masquage.ResoudreSession(ctx, pool, j.CourseID, ptr(j.DestinataireID), nil)
 	if err != nil {
 		t.Fatalf("résolution: %v", err)
 	}
@@ -236,7 +236,7 @@ func TestListerMessages_HistoriqueLisibleApresExpiration(t *testing.T) {
 		t.Fatalf("clôture: %v", err)
 	}
 
-	apres, err := masquage.ResoudreSession(ctx, pool, j.CourseID, ptr(j.ClientID), nil)
+	apres, err := masquage.ResoudreSession(ctx, pool, j.CourseID, ptr(j.DestinataireID), nil)
 	if err != nil {
 		t.Fatalf("résolution après clôture: %v", err)
 	}
@@ -262,16 +262,16 @@ func TestEnregistrerMessage_PorteLeRoleDeLExpediteur(t *testing.T) {
 	j := testdb.CreerJeu(t, pool, time.Now().Add(time.Hour))
 	ctx := context.Background()
 
-	cote := func(clientID, livreurID *uuid.UUID) *masquage.Session {
+	cote := func(destinataireID, livreurID *uuid.UUID) *masquage.Session {
 		t.Helper()
-		s, err := masquage.ResoudreSession(ctx, pool, j.CourseID, clientID, livreurID)
+		s, err := masquage.ResoudreSession(ctx, pool, j.CourseID, destinataireID, livreurID)
 		if err != nil {
 			t.Fatalf("résolution: %v", err)
 		}
 		return s
 	}
 
-	mClient, err := masquage.EnregistrerMessage(ctx, pool, cote(ptr(j.ClientID), nil), "vous êtes loin ?")
+	mClient, err := masquage.EnregistrerMessage(ctx, pool, cote(ptr(j.DestinataireID), nil), "vous êtes loin ?")
 	if err != nil {
 		t.Fatalf("écriture client: %v", err)
 	}
@@ -282,8 +282,8 @@ func TestEnregistrerMessage_PorteLeRoleDeLExpediteur(t *testing.T) {
 
 	// L'expéditeur est un rôle, jamais une identité : c'est ce qui permet au
 	// front d'afficher « votre livreur » sans jamais nommer personne.
-	if mClient.Expediteur != masquage.RoleClient {
-		t.Errorf("expéditeur = %q, attendu %q", mClient.Expediteur, masquage.RoleClient)
+	if mClient.Expediteur != masquage.RoleDestinataire {
+		t.Errorf("expéditeur = %q, attendu %q", mClient.Expediteur, masquage.RoleDestinataire)
 	}
 	if mLivreur.Expediteur != masquage.RoleLivreur {
 		t.Errorf("expéditeur = %q, attendu %q", mLivreur.Expediteur, masquage.RoleLivreur)
@@ -298,7 +298,7 @@ func TestListerMessages_OrdreChronologique(t *testing.T) {
 	j := testdb.CreerJeu(t, pool, time.Now().Add(time.Hour))
 	ctx := context.Background()
 
-	s, err := masquage.ResoudreSession(ctx, pool, j.CourseID, ptr(j.ClientID), nil)
+	s, err := masquage.ResoudreSession(ctx, pool, j.CourseID, ptr(j.DestinataireID), nil)
 	if err != nil {
 		t.Fatalf("résolution: %v", err)
 	}
@@ -346,7 +346,7 @@ func TestListerMessages_IsolationEntreConversations(t *testing.T) {
 	b := testdb.CreerJeu(t, pool, time.Now().Add(time.Hour))
 	ctx := context.Background()
 
-	sa, err := masquage.ResoudreSession(ctx, pool, a.CourseID, ptr(a.ClientID), nil)
+	sa, err := masquage.ResoudreSession(ctx, pool, a.CourseID, ptr(a.DestinataireID), nil)
 	if err != nil {
 		t.Fatalf("résolution A: %v", err)
 	}
@@ -368,7 +368,7 @@ func TestEnregistrerMessage_ContenuHorsBornesRejete(t *testing.T) {
 	j := testdb.CreerJeu(t, pool, time.Now().Add(time.Hour))
 	ctx := context.Background()
 
-	s, err := masquage.ResoudreSession(ctx, pool, j.CourseID, ptr(j.ClientID), nil)
+	s, err := masquage.ResoudreSession(ctx, pool, j.CourseID, ptr(j.DestinataireID), nil)
 	if err != nil {
 		t.Fatalf("résolution: %v", err)
 	}

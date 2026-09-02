@@ -40,7 +40,7 @@ export interface Livreur {
 
 export interface Course {
   id: string;
-  client_id: string;
+  destinataire_id: string;
   livreur_id: string | null;
   statut: StatutCourse;
   adresse_depart: string;
@@ -53,13 +53,13 @@ export interface SessionMasquage {
   session_id: string;
   course_id: string;
   expire_at: string;
-  role: 'client' | 'livreur';
+  role: 'destinataire' | 'livreur';
   active: boolean;
 }
 
 export interface MessageMasque {
   id: string;
-  expediteur: 'client' | 'livreur';
+  expediteur: 'destinataire' | 'livreur';
   contenu: string;
   created_at: string;
 }

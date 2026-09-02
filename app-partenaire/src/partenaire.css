@@ -1,0 +1,747 @@
+/* ==========================================================================
+   Espace partenaire — styles propres au parcours de commande.
+
+   Les jetons et les composants communs vivent dans index.css, recopié depuis
+   app-client (voir la dette « jetons dupliqués » de CLAUDE.md). Ce fichier ne
+   contient que ce qui n'existe nulle part ailleurs, pour que la resynchro-
+   nisation du socle reste un simple remplacement de fichier.
+   ========================================================================== */
+
+/* `.surtitre` est le nom retenu ici pour ce que la charte appelle sur-titre ;
+   `.eyebrow` reste dans le socle, hérité des écrans de l'app client. */
+.surtitre {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--or);
+  display: block;
+  margin: 0 0 var(--e-2);
+}
+
+/* Sur crème, la moutarde ne tient pas comme texte (1,91:1) : variante
+   assombrie à 4,82:1. */
+.carte .surtitre,
+.recap-point .surtitre {
+  color: var(--or-texte-clair);
+}
+
+.heros-sous {
+  color: var(--tx-sombre-muet);
+  font-size: 14px;
+  margin: var(--e-2) 0 0;
+  line-height: 1.55;
+}
+
+.mono-petit {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--tx-clair-muet);
+}
+
+.aide {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--tx-clair-muet);
+  margin: 0 0 var(--e-3);
+}
+
+.aide.centre,
+.centre {
+  text-align: center;
+}
+
+.titre-section {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tx-clair-muet);
+  margin: var(--e-4) 0 var(--e-2);
+}
+
+.icone-mini {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.2;
+  flex-shrink: 0;
+}
+
+/* -------------------------------- Boutons -------------------------------- */
+
+.bloc {
+  width: 100%;
+}
+
+.grand {
+  min-height: 60px;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+button.contour {
+  background: transparent;
+  color: var(--vert);
+  border: 2px solid var(--vert);
+}
+
+/* Pas de balayage sur un fond transparent : il apparaîtrait comme une
+   salissure plutôt que comme une brillance. */
+button.contour::after {
+  display: none;
+}
+
+button.contour:hover:not(:disabled) {
+  background: var(--creme-2);
+  box-shadow: none;
+}
+
+button.contour.danger {
+  color: var(--rust);
+  border-color: var(--rust);
+}
+
+button.lien {
+  width: auto;
+  min-height: 0;
+  padding: var(--e-2) 0;
+  background: none;
+  color: var(--vert);
+  font-family: var(--corps);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+button.lien::after {
+  display: none;
+}
+
+button.lien:hover:not(:disabled) {
+  box-shadow: none;
+  filter: none;
+  color: var(--vert-3);
+}
+
+button.lien.centre {
+  display: block;
+  margin: var(--e-3) auto 0;
+}
+
+button.lien.retour {
+  margin-bottom: var(--e-3);
+}
+
+.barre-actions {
+  display: flex;
+  gap: var(--e-3);
+  margin-top: var(--e-4);
+}
+
+.barre-actions button.contour {
+  flex: 0 0 auto;
+  width: auto;
+  padding-inline: var(--e-4);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.barre-actions .principal {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* ----------------------------- Fil d'étapes ------------------------------ */
+
+.fil-etapes {
+  display: flex;
+  gap: var(--e-2);
+  list-style: none;
+  padding: 0;
+  margin: var(--e-4) 0 0;
+}
+
+/* Trait supérieur : l'étape courante reste identifiable sans percevoir la
+   couleur, comme partout ailleurs dans la charte. */
+.fil-etapes li {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 3px solid rgba(245, 239, 225, 0.22);
+  padding-top: var(--e-2);
+  color: var(--tx-sombre-muet);
+}
+
+.fil-etapes li.faite {
+  border-top-color: var(--or);
+}
+
+.fil-etapes li.courante {
+  border-top-color: var(--or);
+  color: var(--tx-sombre);
+  font-weight: 700;
+}
+
+.fil-pastille {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-family: var(--mono);
+  font-size: 11px;
+  background: rgba(245, 239, 225, 0.14);
+  color: var(--tx-sombre);
+}
+
+.fil-etapes li.faite .fil-pastille,
+.fil-etapes li.courante .fil-pastille {
+  background: var(--or);
+  color: var(--vert);
+}
+
+.fil-libelle {
+  font-size: 12px;
+}
+
+/* --------------------------- Sélecteur de point --------------------------- */
+
+.choix-point {
+  margin-top: var(--e-3);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  border: 1px solid var(--creme-2);
+}
+
+.choix-point-carte {
+  height: 200px;
+}
+
+.choix-point-pied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-3);
+  padding: var(--e-2) var(--e-3);
+  background: var(--creme-2);
+  min-height: 44px;
+}
+
+.choix-point-pied .attenue {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* Goutte inversée, comme une épingle plantée : le sommet pointe le lieu
+   exact, ce qu'un rond centré ne ferait pas. */
+.marqueur-point span {
+  display: block;
+  width: 20px;
+  height: 20px;
+  margin: 3px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 2px solid var(--creme);
+  box-shadow: 0 2px 6px rgba(14, 31, 25, 0.35);
+}
+
+.marqueur-vert span {
+  background: var(--vert-3);
+}
+
+.marqueur-rust span {
+  background: var(--rust);
+}
+
+/* --------------------------------- Carnet -------------------------------- */
+
+.carnet {
+  list-style: none;
+  padding: 0;
+  margin: var(--e-3) 0;
+  display: grid;
+  gap: var(--e-2);
+}
+
+.carnet button {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  background: var(--creme-2);
+  color: var(--tx-clair);
+  padding: var(--e-3);
+  min-height: 0;
+  font-family: var(--corps);
+  font-weight: 400;
+}
+
+.carnet button::after {
+  display: none;
+}
+
+.carnet button:hover {
+  box-shadow: none;
+  filter: none;
+  background: #e2d6b8;
+}
+
+.carnet-nom {
+  font-family: var(--titre);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.carnet-adresse {
+  font-size: 13px;
+  color: var(--tx-clair-muet);
+}
+
+.carnet-compte {
+  margin-top: 2px;
+}
+
+/* ------------------------------ Récapitulatif ----------------------------- */
+
+.recap-trajet {
+  display: grid;
+  gap: 0;
+  margin-bottom: var(--e-4);
+}
+
+.recap-point {
+  display: flex;
+  gap: var(--e-3);
+  align-items: flex-start;
+}
+
+.recap-pastille {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  color: var(--creme);
+}
+
+.recap-pastille.depart {
+  background: var(--vert-3);
+}
+
+.recap-pastille.arrivee {
+  background: var(--rust);
+}
+
+/* Trait pointillé entre les deux points : rend le trajet lisible d'un coup,
+   là où deux blocs empilés se liraient comme une simple liste. */
+.recap-liaison {
+  width: 0;
+  height: 26px;
+  margin-left: 14px;
+  border-left: 2px dashed var(--creme-2);
+}
+
+.recap-adresse {
+  margin: 0;
+  font-weight: 600;
+}
+
+.recap-point .attenue {
+  margin: 2px 0 0;
+  font-size: 13px;
+}
+
+.recap-destinataire {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--tx-clair);
+}
+
+.recap-ligne {
+  display: flex;
+  gap: var(--e-3);
+  align-items: flex-start;
+  padding: var(--e-3) 0;
+  border-top: 1px solid var(--creme-2);
+  font-size: 14px;
+}
+
+.recap-ligne svg {
+  flex-shrink: 0;
+  color: var(--tx-clair-muet);
+}
+
+/* --------------------------- Liste des commandes -------------------------- */
+
+.liste-commandes {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--e-3);
+}
+
+.ligne-commande {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  background: var(--creme);
+  color: var(--tx-clair);
+  border: 1px solid var(--creme-2);
+  border-radius: var(--r-md);
+  padding: var(--e-3) var(--e-4);
+  min-height: 0;
+  font-family: var(--corps);
+  font-weight: 400;
+  box-shadow: var(--ombre-1);
+}
+
+.ligne-commande::after {
+  display: none;
+}
+
+.ligne-commande:hover {
+  box-shadow: var(--ombre-2);
+  filter: none;
+}
+
+.ligne-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-3);
+}
+
+/* Le numéro court est en monospace : c'est un identifiant qu'on lit chiffre à
+   chiffre au téléphone, pas un titre. */
+.numero-course {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--vert);
+}
+
+.ligne-destinataire {
+  margin: 4px 0 0;
+  font-family: var(--titre);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.ligne-adresse {
+  margin: 0;
+  font-size: 13px;
+}
+
+.ligne-pied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+  color: var(--tx-clair-muet);
+}
+
+/* Statuts : la pastille porte la couleur, le libellé porte le sens. Aucun état
+   ne repose sur la seule teinte. */
+.badge.statut-en_attente .pastille {
+  background: var(--or-texte-clair);
+}
+
+.badge.statut-assignee .pastille,
+.badge.statut-recuperee .pastille,
+.badge.statut-en_route .pastille {
+  background: var(--succes-texte);
+  animation: pulsation 1.8s ease-in-out infinite;
+}
+
+.badge.statut-livree .pastille {
+  background: var(--succes-texte);
+}
+
+.badge.statut-annulee .pastille {
+  background: var(--tx-clair-muet);
+}
+
+/* ---------------------------------- Vide ---------------------------------- */
+
+.carte.vide {
+  text-align: center;
+  padding: var(--e-6) var(--e-4);
+}
+
+.icone-vide {
+  width: 44px;
+  height: 44px;
+  stroke: var(--creme-2);
+  fill: none;
+  stroke-width: 1.6;
+  margin-bottom: var(--e-3);
+}
+
+/* --------------------------------- Détail --------------------------------- */
+
+.detail {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--e-2) var(--e-4);
+  margin: 0;
+  font-size: 14px;
+}
+
+.detail dt {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tx-clair-muet);
+  padding-top: 3px;
+}
+
+.detail dd {
+  margin: 0;
+}
+
+/* --------------------------------- Équipe --------------------------------- */
+
+.chiffres {
+  display: flex;
+  gap: var(--e-5);
+}
+
+.chiffre {
+  font-family: var(--titre);
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+  margin: 0 0 4px;
+  color: var(--vert);
+}
+
+.liste-comptes {
+  list-style: none;
+  padding: 0;
+  margin: var(--e-3) 0;
+  display: grid;
+  gap: var(--e-2);
+}
+
+.liste-comptes li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-3);
+  padding: var(--e-3) 0;
+  border-bottom: 1px solid var(--creme-2);
+}
+
+.liste-comptes p {
+  margin: 0;
+}
+
+.compte-nom {
+  font-family: var(--titre);
+  font-weight: 700;
+}
+
+.form-invitation {
+  display: grid;
+  gap: var(--e-3);
+  margin-top: var(--e-3);
+}
+
+.ligne-info {
+  display: flex;
+  gap: var(--e-3);
+  align-items: flex-start;
+}
+
+.ligne-info p {
+  margin: 0;
+}
+
+/* ---------------------------- Code d'invitation --------------------------- */
+
+.encart-code {
+  background: var(--vert);
+  border-radius: var(--r-md);
+  padding: var(--e-4);
+  margin-bottom: var(--e-4);
+  text-align: center;
+}
+
+.encart-code .attenue {
+  color: var(--tx-sombre-muet);
+}
+
+.encart-code .surtitre {
+  color: var(--or);
+}
+
+/* Le code est affiché une seule fois et doit être recopié sans erreur : d'où
+   le monospace, l'interlettrage large et la taille. Un zéro et un O mal
+   distingués coûteraient un appel au support. */
+.code-invitation {
+  font-family: var(--mono);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  /* Compense l'interlettrage, qui ajoute un blanc après le dernier caractère
+     et décentrerait le bloc. */
+  text-indent: 0.3em;
+  color: var(--or);
+  margin: var(--e-3) 0;
+  user-select: all;
+}
+
+.saisie-code {
+  font-family: var(--mono);
+  font-size: 22px;
+  letter-spacing: 0.34em;
+  text-align: center;
+}
+
+/* ------------------------------ Navigation ------------------------------- */
+
+/* « Commander » est mis en avant : c'est l'action pour laquelle l'application
+   existe, pas une destination parmi d'autres. */
+.nav-bas .nav-action {
+  color: var(--tx-sombre);
+}
+
+.nav-action-pastille {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--or);
+  color: var(--vert);
+  margin-bottom: 2px;
+  box-shadow: 0 0 18px 2px var(--or-halo);
+}
+
+.nav-action-pastille svg {
+  stroke: currentColor;
+  stroke-width: 2.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge .pastille {
+    animation: none;
+  }
+}
+
+/* ------------------------------- Annonces -------------------------------- */
+
+/* Empilées en bas : sur un téléphone, le pouce y arrive, et le haut est
+   occupé par le titre de l'écran en cours. Au-dessus de la navigation, qui
+   fait 64 px. */
+.annonces {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 var(--e-4);
+  pointer-events: none;
+}
+
+.annonce {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--vert);
+  color: var(--tx-sombre);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  box-shadow: var(--ombre-2);
+  pointer-events: auto;
+  animation: annonce-entree 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes annonce-entree {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.annonce-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: rgba(245, 239, 225, 0.14);
+  color: var(--or);
+}
+
+/* Livrée et annulée se distinguent par la teinte de la pastille **et** par
+   l'icône : coche ou croix. Aucun état ne repose sur la seule couleur. */
+.annonce-livree .annonce-icone {
+  background: var(--or);
+  color: var(--vert);
+}
+
+.annonce-annulee .annonce-icone {
+  background: var(--rust);
+  color: var(--creme);
+}
+
+.annonce-texte {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.annonce-numero {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--or);
+  margin-bottom: 2px;
+}
+
+button.annonce-fermer {
+  width: auto;
+  min-height: 0;
+  padding: 6px;
+  background: none;
+  color: var(--tx-sombre-muet);
+  flex-shrink: 0;
+}
+
+button.annonce-fermer::after { display: none; }
+
+button.annonce-fermer:hover:not(:disabled) {
+  box-shadow: none;
+  filter: none;
+  color: var(--tx-sombre);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .annonce { animation: none; }
+}

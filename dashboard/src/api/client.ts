@@ -170,6 +170,7 @@ export const api = {
     requete<T>(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined }),
   patch: <T>(path: string, body?: unknown) =>
     requete<T>(path, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined }),
+  delete: <T>(path: string) => requete<T>(path, { method: 'DELETE' }),
 };
 
 export function wsUrl(path: string): string {

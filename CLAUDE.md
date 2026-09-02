@@ -30,7 +30,7 @@ Le barème précis n'est pas encore fixé — ne pas coder de valeurs en dur. Ta
 
 | # | Priorité | État |
 | --- | --- | --- |
-| 1 | Authentification par rôle (compagnie / livreur / client) | ✅ |
+| 1 | Authentification par rôle (compagnie / livreur / destinataire) | ✅ |
 | 2 | Commandes : création, assignation manuelle, suivi de statut | ✅ |
 | 3 | Tracking temps réel de la position des livreurs | ✅ |
 | 4 | Masquage du numéro (aucun numéro réel échangé) | ✅ chat texte ; voix WebRTC et repli PSTN non faits |
@@ -51,6 +51,7 @@ Hors périmètre V1 (Phase 2+) : paiement intégré (mobile money), attribution 
 | App livreur (PWA) | React + Vite | `app-livreur/` |
 | App livreur (natif) | Expo / React Native | `app-livreur-mobile/` |
 | App client | React + Vite + Leaflet | `app-client/` |
+| App partenaire | React + Vite + Leaflet | `app-partenaire/` |
 | Hébergement | Cloud type Render, scalable horizontalement | — |
 
 ## Démarrage local
@@ -62,9 +63,27 @@ cd backend && docker compose up -d && go run ./cmd/api   # API sur :8090, Postgr
 cd dashboard     && npm run dev    # :5173
 cd app-livreur   && npm run dev    # :5175
 cd app-client    && npm run dev    # :5176
+cd app-partenaire && npm run dev  # :5177
 ```
 
 `CORS_ORIGINS` (dans `backend/.env`) doit lister les origines des fronts, sinon le navigateur bloque tout.
+
+### Points de contrôle
+
+| Route | Question | Où la brancher |
+| --- | --- | --- |
+| `GET /health` | Postgres et Redis répondent-ils ? | sonde de **readiness** |
+| `GET /health/live` | le processus tourne-t-il ? | sonde de **liveness** |
+
+`/health` rend 503 en **nommant** le service en défaut — un 503 nu obligerait à
+deviner lequel des deux est tombé. Il ne reprend jamais le message d'erreur
+brut : l'endpoint est public et l'erreur de pgx contient l'utilisateur, la base
+et l'hôte. Un cache d'une seconde évite qu'un flood de `/health` devienne un
+flood de la base.
+
+**Ne pas les confondre** : un orchestrateur branché sur `/health` pour la
+liveness redémarrerait le service parce que Postgres est tombé, ce qui ne
+répare rien et ajoute une panne à la panne.
 
 ### Jeu de démonstration
 
@@ -85,9 +104,111 @@ Mot de passe commun : `motdepasse123`.
 
 ## Base de données
 
-Le schéma vit dans `backend/migrations/*.sql`, appliqué par `go run ./cmd/migrate` (suivi dans `schema_migrations`). Tables : `compagnies`, `utilisateurs`, `livreurs`, `clients`, `courses`, `positions_livreurs`, `sessions_masquage`, `messages_masques`, `config_tarifaire`.
+Le schéma vit dans `backend/migrations/*.sql`, appliqué par `go run ./cmd/migrate` (suivi dans `schema_migrations`).
+
+| Origine | Tables |
+| --- | --- |
+| MVP | `compagnies`, `utilisateurs`, `livreurs`, `destinataires`, `courses`, `positions_livreurs`, `sessions_masquage`, `messages_masques`, `config_tarifaire` |
+| Sessions longues | `sessions_refresh` |
+| V2 — partenaires | `partenaires`, `invitations_collaborateurs` |
+
+> **`clients` a été renommé `destinataires`** (migration `0006`), et le rôle
+> `client` est devenu `destinataire`. En V1 le mot était sans ambiguïté ;
+> depuis que la compagnie a des entreprises **clientes**, il ne disait plus de
+> qui on parlait. Les jetons émis avant le renommage restent compris —
+> `middleware.Claims.normaliser()` reprend l'ancien claim `client_id` et
+> l'ancien rôle. **Ce code est temporaire** : à retirer une fois les trente
+> jours de vie des jetons de renouvellement écoulés (voir D2 dans ROADMAP.md).
+> Le dossier `app-client/` garde son nom : le renommer casserait les chemins
+> sans rien apporter.
 
 Le schéma initial du cahier des charges a été étendu : ajout de `compagnies` (tenants), `utilisateurs` (comptes multi-rôles nécessaires à l'auth) et rattachement de tout à `compagnie_id`.
+
+## Partenaires et commande en autonomie (V2)
+
+Vocabulaire, à ne jamais confondre :
+
+| | Qui | Ce qu'il fait |
+| --- | --- | --- |
+| **compagnie** | la société de livraison | locataire de la plateforme, gère sa flotte |
+| **partenaire** | une entreprise cliente de cette compagnie | commande des livraisons, gère ses collaborateurs |
+| **collaborateur** | un employé du partenaire | commande au nom de son entreprise, ne gère rien |
+| **destinataire** | le particulier qui reçoit le colis | suit sa livraison, dialogue avec le livreur |
+
+Le parcours de commande (`app-partenaire/`, port 5177) reprend l'**envoi de
+colis** de Glovo : quatre temps guidés (retrait → livraison → colis →
+récapitulatif), épingle facultative sur carte, carnet de destinataires, numéro
+court, suivi en direct. Il ne reprend **ni catalogue, ni panier, ni paiement** —
+voir l'avertissement en tête de fichier.
+
+- **Le carnet de destinataires n'est pas une table** : c'est une lecture de
+  l'historique des courses (`DISTINCT ON (client_id)`). Une table séparée se
+  désynchroniserait — une adresse corrigée sur une course n'y remonterait pas.
+- **Le numéro court** (`FY-1042`) est séquentiel **par compagnie**, via
+  `compagnies.compteur_courses` incrémenté dans la transaction de création. Un
+  UUID ne se dicte pas au téléphone ; une suite partagée laisserait deviner le
+  volume d'affaires d'une autre compagnie.
+- **Aucun prix n'est affiché** à la commande : `config_tarifaire` porte un
+  abonnement et une commission, pas un tarif par course. Il n'y a rien à
+  calculer, et inventer un chiffre serait pire que de n'en montrer aucun.
+- **Adresse en texte libre + repère**, le point GPS restant facultatif : à
+  Ouagadougou l'adresse utile est verbale, et exiger une épingle bloquerait la
+  commande d'un quartier mal cartographié.
+- La **portée de visibilité** d'un collaborateur (ses courses ou toutes celles
+  de son entreprise) vit en base par partenaire, faute d'arbitrage du client.
+- L'invitation d'un collaborateur produit un **code à 6 chiffres**, stocké
+  haché et borné à 5 tentatives. **La plateforme ne l'envoie pas** : il n'y a
+  pas de passerelle SMS, et en simuler une donnerait l'illusion d'un envoi.
+
+Pièges de routage rencontrés, à ne pas réintroduire :
+
+- `app.Group("/commandes", …)` filtre par **préfixe de chaîne**, pas par
+  segment : il capturait aussi `/commandes-entrantes`. Cette route vit
+  désormais sous `/api/dashboard/`.
+- `/commandes/carnet` doit être déclaré **avant** `/commandes/:id`, sinon
+  « carnet » est capturé comme identifiant.
+
+Tests : `node backend/scripts/test-partenaires.mjs` (comptes, invitations,
+cloisonnement) et `test-commandes.mjs` (commande, carnet, file, annulation).
+
+## Notifications push
+
+Service Expo, contrat repris de sa documentation : `POST` sur
+`https://exp.host/--/api/v2/push/send`, lots de **100 messages au plus**,
+verdicts rendus **dans l'ordre des messages envoyés**. Aucune authentification
+n'est nécessaire tant que la sécurité push n'est pas activée côté EAS
+(`EXPO_ACCESS_TOKEN` sinon).
+
+- L'envoi part dans une **goroutine avec son propre contexte**. Celui de la
+  requête ne convient pas : Fiber l'annule dès la réponse envoyée, ce qui
+  couperait l'appel à peine commencé. Et une assignation ne doit pas attendre
+  un service tiers — mesuré à 54 ms côté opérateur pendant que l'envoi suit.
+- Un verdict `DeviceNotRegistered` **supprime le jeton** ; tout autre échec n'y
+  touche pas. Supprimer sur un incident passager priverait le livreur de toutes
+  ses notifications suivantes.
+- Une réponse de longueur incohérente est **refusée** plutôt qu'interprétée :
+  associer un verdict au mauvais jeton ferait supprimer celui d'un livreur en
+  service.
+- L'unicité de `jetons_push` porte sur le **jeton**, pas sur le couple : un
+  téléphone réinstallé ou prêté garde son jeton Expo, et sans réattribution
+  l'ancien porteur recevrait les courses du nouveau.
+
+**Non fait** : la partie application mobile — demander la permission, obtenir
+le jeton, l'enregistrer. Elle ne se vérifie qu'avec un appareil réel.
+
+### Évènements en direct côté partenaire
+
+`GET /ws/partenaire/evenements` — un canal Redis **par entreprise**, qui
+annonce les changements de statut de ses commandes.
+
+- Complète le rafraîchissement à 20 s plutôt que de le remplacer : la socket
+  tombe sur un réseau instable, le sondage rattrape.
+- **La règle de visibilité s'y applique** : un collaborateur en visibilité
+  « personnelle » ne reçoit que ses propres commandes. La portée est relue à la
+  connexion, pas prise du jeton — un jeton vit trente minutes, le réglage a pu
+  changer entre-temps.
+- L'auteur d'une commande circule sur Redis pour ce filtrage mais est retiré
+  avant d'atteindre le front.
 
 ## Tracking temps réel
 
@@ -97,6 +218,7 @@ Le schéma initial du cahier des charges a été étendu : ajout de `compagnies`
 - Chaque position est publiée sur **deux canaux Redis** : `course:{livreur_id}:position` (le client qui suit sa course) et `compagnie:{compagnie_id}:positions` (la vue flotte). Le canal porté par la compagnie évite au dashboard de s'abonner livreur par livreur.
 - Chaque position porte son **horodatage de capture**, pas d'envoi. Une position rejouée après une coupure est diffusée mais **pas persistée** si elle est plus ancienne que celle en base — sinon un rattrapage tardif écraserait une position récente.
 - TTL de présence : `livreur:last_seen:{id}` expire après 30 s. `GET /api/livreurs/` renvoie `en_ligne`, la présence **réelle**, à distinguer du statut déclaré.
+- Le canal Redis transporte le `livreur_id` — la vue flotte en a besoin. Mais `/ws/courses/:id/position` **ré-encode la position sans cet identifiant** pour le destinataire et le partenaire : eux voient *où en est* le colis, jamais *qui* le porte. C'est le seul endroit où cette frontière se franchit, et `internal/handlers/tracking_test.go` la garde.
 
 ## Masquage du numéro
 
@@ -196,6 +318,12 @@ rejouer une fois) et **proactif** (`assurerJetonFrais()` à l'ouverture, toutes
 les 5 min, et au retour au premier plan). Le proactif n'est pas un luxe : une
 WebSocket porte son jeton dans l'URL du handshake et ne peut pas le rattraper
 après coup — d'où l'appel avant chaque `new WebSocket(...)`.
+
+La table est purgée par une tâche de fond (`auth.PurgerPeriodiquement`) :
+passage au démarrage puis toutes les `PURGE_INTERVALLE_HEURES`. Elle ne
+supprime que les sessions expirées ou révoquées **depuis plus de 30 jours** —
+cette grâce laisse un incident analysable après coup. Un verrou consultatif
+Postgres évite que chaque instance refasse le même travail.
 
 Tests : `node backend/scripts/test-refresh.mjs` (cycle complet, rejeu, révocation)
 et `test-session-longue.mjs`, qui attend une **vraie** expiration face à une API

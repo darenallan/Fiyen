@@ -16,6 +16,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -29,7 +30,20 @@ var (
 	// ErrJetonRejoue signale la présentation d'un jeton déjà remplacé : le
 	// signe qu'il a été volé. Toute la chaîne est alors révoquée.
 	ErrJetonRejoue = errors.New("jeton de renouvellement déjà utilisé")
+	// ErrPurgeConcurrente signale qu'une autre instance tient déjà le verrou.
+	// Ce n'est pas un incident : c'est le fonctionnement normal d'un service
+	// scalé horizontalement, et l'appelant doit le traiter comme tel.
+	ErrPurgeConcurrente = errors.New("purge déjà en cours sur une autre instance")
 )
+
+// Identifiant du verrou consultatif de la purge. Arbitraire mais **stable** :
+// deux instances ne se reconnaissent que si elles emploient le même nombre.
+const cleVerrouPurge int64 = 8_140_925
+
+// IntervallePurgeParDefaut sert de repli quand la configuration est invalide.
+// La purge ne supprime que des lignes vieilles de plus de 30 jours : une fois
+// par jour est déjà généreux.
+const IntervallePurgeParDefaut = 24 * time.Hour
 
 // Session décrit un jeton de renouvellement tel qu'il vit en base.
 type Session struct {
@@ -167,7 +181,29 @@ func RevoquerTout(ctx context.Context, pool *pgxpool.Pool, utilisateurID uuid.UU
 // Purger supprime les sessions expirées ou révoquées de longue date. À appeler
 // périodiquement : sans cela la table grossit indéfiniment.
 func Purger(ctx context.Context, pool *pgxpool.Pool) (int64, error) {
-	tag, err := pool.Exec(ctx, `
+	// Verrou pris dans la même transaction que la suppression : l'hébergement
+	// visé est scalable horizontalement, et sans lui chaque instance referait
+	// le même travail au même moment.
+	//
+	// `_xact_lock` plutôt que `_lock` : il est relâché au commit, donc aucune
+	// fuite possible si la transaction échoue. Un verrou de session, lui,
+	// resterait accroché à une connexion que le pool recyclerait ensuite.
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("transaction de purge: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	var obtenu bool
+	if err := tx.QueryRow(ctx, `SELECT pg_try_advisory_xact_lock($1)`, cleVerrouPurge).
+		Scan(&obtenu); err != nil {
+		return 0, fmt.Errorf("verrou de purge: %w", err)
+	}
+	if !obtenu {
+		return 0, ErrPurgeConcurrente
+	}
+
+	tag, err := tx.Exec(ctx, `
 		DELETE FROM sessions_refresh
 		WHERE expire_at < now() - interval '30 days'
 		   OR (revoque_at IS NOT NULL AND revoque_at < now() - interval '30 days')
@@ -175,5 +211,64 @@ func Purger(ctx context.Context, pool *pgxpool.Pool) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return 0, fmt.Errorf("commit de purge: %w", err)
+	}
 	return tag.RowsAffected(), nil
+}
+
+// PurgerPeriodiquement fait le ménage jusqu'à l'annulation du contexte.
+//
+// Un premier passage a lieu immédiatement : sur un service redémarré souvent,
+// attendre le premier intervalle reviendrait à ne jamais purger.
+//
+// Bloquant — à lancer dans une goroutine. La fonction ne rend la main qu'à
+// l'annulation du contexte, ce qui la rend testable sans attendre un jour.
+func PurgerPeriodiquement(ctx context.Context, pool *pgxpool.Pool, intervalle time.Duration, journal *log.Logger) {
+	// `time.NewTicker` panique sur un intervalle nul ou négatif : une variable
+	// d'environnement mal renseignée ferait tomber le service au démarrage.
+	// Un service qui ne démarre pas parce que le ménage est mal réglé est un
+	// bien plus gros problème que le ménage lui-même.
+	if intervalle <= 0 {
+		journal.Printf("purge des sessions : intervalle invalide (%s), repli sur %s",
+			intervalle, IntervallePurgeParDefaut)
+		intervalle = IntervallePurgeParDefaut
+	}
+
+	passage := func() {
+		// Délai propre : une purge qui traîne ne doit pas empêcher l'arrêt du
+		// service, et la table est petite — si ça dépasse, quelque chose ne va
+		// pas et il vaut mieux abandonner ce passage que bloquer le suivant.
+		ctxPassage, annuler := context.WithTimeout(ctx, 2*time.Minute)
+		defer annuler()
+
+		supprimees, err := Purger(ctxPassage, pool)
+		switch {
+		case errors.Is(err, ErrPurgeConcurrente):
+			// Une autre instance s'en charge : c'est le fonctionnement normal
+			// d'un service scalé, pas un incident.
+			journal.Println("purge des sessions : déjà en cours sur une autre instance")
+		case errors.Is(err, context.Canceled):
+			// Arrêt du service pendant le passage : rien à signaler.
+		case err != nil:
+			journal.Printf("purge des sessions échouée : %v", err)
+		default:
+			journal.Printf("purge des sessions : %d ligne(s) supprimée(s)", supprimees)
+		}
+	}
+
+	passage()
+
+	ticker := time.NewTicker(intervalle)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			passage()
+		}
+	}
 }
