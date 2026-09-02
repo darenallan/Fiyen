@@ -745,3 +745,90 @@ button.annonce-fermer:hover:not(:disabled) {
 @media (prefers-reduced-motion: reduce) {
   .annonce { animation: none; }
 }
+
+/* ------------------------------- Réglages -------------------------------- */
+
+.liste-reglages {
+  list-style: none;
+  padding: 0;
+  margin: var(--e-3) 0;
+  display: grid;
+  gap: 2px;
+}
+
+.liste-reglages li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-3);
+  padding: var(--e-3) 0;
+  border-bottom: 1px solid var(--creme-2);
+  font-size: 14px;
+}
+
+.liste-reglages li:last-child {
+  border-bottom: none;
+}
+
+/* Bascule.
+
+   Le curseur porte la position, le mot porte l'état. Une bascule qui ne
+   reposerait que sur la position demande de comparer deux lignes pour savoir
+   laquelle est active — et devient illisible seule. */
+button.bascule {
+  width: auto;
+  min-height: 34px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 6px;
+  border-radius: 999px;
+  background: var(--creme-2);
+  color: var(--tx-clair-muet);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+button.bascule::after {
+  display: none;
+}
+
+button.bascule:hover:not(:disabled) {
+  box-shadow: none;
+  filter: none;
+  background: #e2d6b8;
+}
+
+button.bascule.active {
+  background: var(--vert);
+  color: var(--tx-sombre);
+}
+
+button.bascule.active:hover:not(:disabled) {
+  background: var(--vert-2);
+}
+
+.bascule-pastille {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--creme);
+  box-shadow: 0 1px 3px rgba(14, 31, 25, 0.28);
+  transition: background 160ms ease;
+}
+
+button.bascule.active .bascule-pastille {
+  background: var(--or);
+}
+
+.bascule-mot {
+  min-width: 26px;
+  text-align: left;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bascule-pastille { transition: none; }
+}

@@ -155,3 +155,12 @@ export function IconeEquipe({ className = 'icone' }: Props) {
     </svg>
   );
 }
+
+export function IconeCloche({ className = 'icone' }: Props) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6Z" />
+      <path d="M13.7 20a2 2 0 0 1-3.4 0" />
+    </svg>
+  );
+}

@@ -11,6 +11,7 @@ import (
 	"fiyen-backend/internal/evenements"
 	"fiyen-backend/internal/middleware"
 	"fiyen-backend/internal/models"
+	"fiyen-backend/internal/notifications"
 )
 
 // Canal des évènements d'une entreprise cliente.
@@ -94,6 +95,31 @@ func (d *Deps) visibiliteRestreinte(ctx context.Context, claims *middleware.Clai
 	return visibilite == string(models.VisibilitePersonnelle), nil
 }
 
+// evenementDeStatut traduit un statut de course en évènement de notification.
+//
+// Les deux vocabulaires sont distincts à dessein : un statut décrit où en est
+// la course, un évènement décrit ce qu'on annonce. La phase 4 ajoutera des
+// statuts interurbains qui n'auront pas tous vocation à être annoncés.
+func evenementDeStatut(statut models.StatutCourse) notifications.Evenement {
+	switch statut {
+	case models.CourseAssignee:
+		return notifications.EvtCourseAssignee
+	case models.CourseRecuperee:
+		return notifications.EvtCourseRecuperee
+	case models.CourseEnRoute:
+		return notifications.EvtCourseEnRoute
+	case models.CourseLivree:
+		return notifications.EvtCourseLivree
+	case models.CourseAnnulee:
+		return notifications.EvtCourseAnnulee
+	default:
+		// Un statut sans évènement correspondant ne peut pas être coupé par
+		// une préférence : il passera toujours. C'est le bon défaut — mieux
+		// vaut une annonce de trop qu'une étape passée sous silence.
+		return notifications.Evenement("")
+	}
+}
+
 // publierEvenementCourse annonce un changement d'état aux abonnés du
 // partenaire concerné.
 //
@@ -117,18 +143,32 @@ func (d *Deps) publierEvenementCourse(courseID uuid.UUID, statut models.StatutCo
 			destinataireNom string
 			adresseArrivee  string
 		)
+		// La préférence est lue dans la même requête : une seconde lecture
+		// coûterait un aller-retour pour un réglage qui ne change presque
+		// jamais, et pourrait tomber sur un état différent.
+		var coupe bool
 		err := d.DB.QueryRow(ctx, `
 			SELECT co.partenaire_id, co.cree_par, co.numero,
-			       d.nom, COALESCE(co.adresse_arrivee, '')
+			       d.nom, COALESCE(co.adresse_arrivee, ''),
+			       EXISTS (
+			           SELECT 1 FROM notifications_desactivees nd
+			           WHERE nd.partenaire_id = co.partenaire_id AND nd.evenement = $2
+			       )
 			FROM courses co
 			JOIN destinataires d ON d.id = co.destinataire_id
 			WHERE co.id = $1
-		`, courseID).Scan(&partenaireID, &creePar, &numero, &destinataireNom, &adresseArrivee)
+		`, courseID, string(evenementDeStatut(statut))).
+			Scan(&partenaireID, &creePar, &numero, &destinataireNom, &adresseArrivee, &coupe)
 		if err != nil {
 			log.Printf("évènement : lecture de la course %s échouée : %v", courseID, err)
 			return
 		}
 		if partenaireID == nil {
+			return
+		}
+		// Le partenaire a coupé cette étape. Rien à journaliser : c'est un
+		// réglage volontaire, pas un incident.
+		if coupe {
 			return
 		}
 

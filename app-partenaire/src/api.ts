@@ -81,6 +81,16 @@ export interface Invitation {
   code?: string;
 }
 
+export interface PreferenceNotification {
+  evenement: string;
+  libelle: string;
+  actif: boolean;
+  /** Faux quand aucun canal n'est prévu pour cette étape : le réglage est
+   *  affiché mais grisé, plutôt qu'absent — le partenaire doit pouvoir
+   *  constater qu'une étape existe et qu'elle ne le concerne pas. */
+  modifiable: boolean;
+}
+
 /**
  * Changement d'état d'une commande, poussé en direct.
  *
@@ -303,6 +313,15 @@ export const api = {
 
   annulerCommande: (id: string) =>
     requete<void>(`/api/commandes/${id}/annuler`, { method: 'POST' }),
+
+  preferencesNotification: () =>
+    requete<PreferenceNotification[]>('/api/mon-partenaire/notifications'),
+
+  majPreferenceNotification: (evenement: string, actif: boolean) =>
+    requete<void>('/api/mon-partenaire/notifications', {
+      method: 'PATCH',
+      body: JSON.stringify({ evenement, actif }),
+    }),
 
   collaborateurs: () =>
     requete<{ collaborateurs: Collaborateur[]; invitations: Invitation[] }>(

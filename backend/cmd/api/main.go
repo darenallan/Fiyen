@@ -150,7 +150,17 @@ func main() {
 		deps.MonPartenaire,
 	)
 
+	// Lecture ouverte au collaborateur : il doit pouvoir constater ce que son
+	// entreprise a reglé. L'ecriture reste au compte principal — un
+	// collaborateur qui couperait les notifications rendrait ses collegues
+	// sourds sans qu'ils l'aient demande.
+	api.Get("/mon-partenaire/notifications",
+		middleware.RolesRequis(models.RolePartenaire, models.RoleCollaborateur),
+		deps.ListerPreferencesNotification,
+	)
+
 	monPartenaire := api.Group("/mon-partenaire", middleware.RolesRequis(models.RolePartenaire))
+	monPartenaire.Patch("/notifications", deps.MajPreferenceNotification)
 	monPartenaire.Get("/collaborateurs", deps.ListerCollaborateurs)
 	monPartenaire.Post("/collaborateurs", deps.InviterCollaborateur)
 	monPartenaire.Patch("/collaborateurs/:collaborateurId", deps.MajCollaborateur)

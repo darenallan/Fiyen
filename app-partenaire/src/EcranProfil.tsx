@@ -5,9 +5,10 @@ import {
   type Collaborateur,
   type Invitation,
   type Partenaire,
+  type PreferenceNotification,
   type RolePartenaire,
 } from './api';
-import { IconeAlerte, IconeCroix, IconeEquipe, IconeVerrou } from './composants/Icones';
+import { IconeAlerte, IconeCloche, IconeCroix, IconeEquipe, IconeVerrou } from './composants/Icones';
 
 /**
  * Profil de l'entreprise et gestion de son équipe.
@@ -65,6 +66,8 @@ export function EcranProfil({
         </section>
       )}
 
+      <Notifications role={role} />
+
       {role === 'partenaire' && <Equipe />}
 
       <section className="carte apparition">
@@ -88,6 +91,98 @@ export function EcranProfil({
         </button>
       </section>
     </div>
+  );
+}
+
+/**
+ * Réglages de notification.
+ *
+ * En lecture pour tous, en écriture pour le seul compte principal : un
+ * collaborateur qui couperait les annonces rendrait ses collègues sourds sans
+ * qu'ils l'aient demandé.
+ */
+function Notifications({ role }: { role: RolePartenaire }) {
+  const [preferences, setPreferences] = useState<PreferenceNotification[]>([]);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [enCours, setEnCours] = useState<string | null>(null);
+
+  const charger = useCallback(async () => {
+    try {
+      setPreferences(await api.preferencesNotification());
+      setErreur(null);
+    } catch (err) {
+      setErreur(err instanceof ApiError ? err.message : 'Lecture impossible');
+    }
+  }, []);
+
+  useEffect(() => {
+    void charger();
+  }, [charger]);
+
+  async function basculer(p: PreferenceNotification) {
+    setEnCours(p.evenement);
+    setErreur(null);
+    try {
+      await api.majPreferenceNotification(p.evenement, !p.actif);
+      await charger();
+    } catch (err) {
+      setErreur(err instanceof ApiError ? err.message : 'Mise à jour impossible');
+    } finally {
+      setEnCours(null);
+    }
+  }
+
+  if (preferences.length === 0 && !erreur) return null;
+
+  return (
+    <section className="carte apparition">
+      <div className="entete">
+        <h2>Ce que vous voulez savoir</h2>
+        <IconeCloche />
+      </div>
+
+      {erreur && (
+        <div className="bandeau-erreur" role="alert">
+          <IconeAlerte />
+          <span>{erreur}</span>
+        </div>
+      )}
+
+      <ul className="liste-reglages">
+        {preferences.map((p) => (
+          <li key={p.evenement}>
+            <span className={p.modifiable ? '' : 'attenue'}>{p.libelle}</span>
+
+            {role === 'partenaire' && p.modifiable ? (
+              <button
+                type="button"
+                className={`bascule ${p.actif ? 'active' : ''}`}
+                onClick={() => basculer(p)}
+                disabled={enCours === p.evenement}
+                role="switch"
+                aria-checked={p.actif}
+                aria-label={p.libelle}
+              >
+                <span className="bascule-pastille" />
+                {/* Le mot double la position du curseur : l'état reste lisible
+                    sans percevoir la couleur ni comparer deux positions. */}
+                <span className="bascule-mot">{p.actif ? 'Oui' : 'Non'}</span>
+              </button>
+            ) : (
+              <span className="mono-petit">
+                {!p.modifiable ? 'Non concerné' : p.actif ? 'Oui' : 'Non'}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      <p className="aide">
+        {role === 'partenaire'
+          ? 'Coupez ce que vous ne voulez pas voir passer. Les autres comptes de votre entreprise suivent le même réglage.'
+          : 'Ces réglages sont ceux de votre entreprise. Seul le compte principal peut les modifier.'}
+      </p>
+    </section>
   );
 }
 

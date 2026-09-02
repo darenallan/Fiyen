@@ -192,10 +192,52 @@ une réponse du client en dernier.
     `scripts/test-evenements.mjs` 11/11, dont le cloisonnement entre
     entreprises et les deux sens de la visibilité. Une mutation qui ouvre la
     visibilité fait échouer le test.
-- [ ] **3.4 — Choix du canal selon le coût**
-  - Push gratuit ; SMS réservé à deux événements, pas plus. Un SMS par
-    changement de statut coûterait plus que la commission de la course.
-- [ ] **3.5 — Préférences par partenaire**
+- [x] **3.4 — Choix du canal selon le coût** *(`internal/notifications/politique.go`)*
+  - **Table explicite** (évènement × cible) plutôt qu'une règle éparpillée
+    dans les handlers : ce qui coûte de l'argent doit se lire d'un coup d'œil
+    et se modifier à un seul endroit. Un couple absent ne déclenche **rien** —
+    ajouter une notification est une décision, pas un effet de bord.
+  - Livreur et partenaire : push seul, ils sont équipés. Destinataire :
+    **exactement deux SMS**, « en route » (se rendre disponible) et « livrée »
+    (clôt l'échange). Les étapes intermédiaires ne changent rien pour lui et
+    coûteraient un SMS chacune.
+  - **Garde-fou dans l'envoyeur, pas chez l'appelant** : un handler qui
+    oublierait la vérification enverrait des SMS hors budget. Le fournisseur
+    n'est même pas sollicité si la politique refuse — vérifier après coup
+    aurait déjà coûté le message.
+  - `SMSNonConfigure` **échoue explicitement**, comme le repli PSTN du
+    masquage : un envoi silencieusement avalé ferait croire que le
+    destinataire a été prévenu.
+  - *Vérifié* : 8 tests, et quatre mutations attrapées — garde-fou retiré, SMS
+    supplémentaire glissé dans la table, SMS au livreur, couple livreur retiré
+    (ce dernier casse l'envoi réel, pas seulement la table).
+
+> **Il n'existe aucune passerelle SMS dans ce projet.** La politique est prête
+> et bornée, mais rien ne part : brancher un opérateur couvrant le Burkina Faso
+> et **vérifier son coût unitaire réel** avant d'élargir la table. Le point 3.6
+> (notifications au destinataire) en dépend.
+- [x] **3.5 — Préférences par partenaire** *(`0009_preferences_notification.sql`)*
+  - **Les préférences ne peuvent que restreindre**, jamais élargir : un
+    partenaire qui pourrait s'accorder des canaux contournerait le plafond de
+    SMS de la politique, et la facture ne se verrait qu'après. Une étape sans
+    canal prévu est affichée mais **non modifiable** — plutôt qu'absente, pour
+    qu'on puisse constater qu'elle existe et ne concerne pas.
+  - **Table des exclusions, pas des activations.** Le défaut est « on
+    prévient » : stocker les activations aurait exigé d'écrire une ligne par
+    évènement à la création de chaque partenaire, et un oubli aurait rendu
+    quelqu'un silencieusement sourd. Ici, ligne absente = prévenir, ce qui est
+    aussi le comportement en cas de panne de lecture.
+  - La préférence est lue **dans la requête de publication** : une seconde
+    lecture coûterait un aller-retour pour un réglage qui ne change presque
+    jamais, et pourrait tomber sur un état différent.
+  - Lecture ouverte au collaborateur, écriture réservée au compte principal :
+    un collaborateur qui couperait les annonces rendrait ses collègues sourds
+    sans qu'ils l'aient demandé.
+  - Côté écran : une bascule où le **mot** double la position du curseur —
+    une bascule qui ne repose que sur la position demande de comparer deux
+    lignes pour savoir laquelle est active.
+  - *Vérifié* : `scripts/test-preferences.mjs`, dont l'effet réel d'une
+    coupure sur le canal d'évènements.
 - [ ] **3.6 — *(reportable)* Notifications au destinataire**
 
 ---

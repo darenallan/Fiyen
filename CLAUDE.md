@@ -193,8 +193,39 @@ n'est nécessaire tant que la sécurité push n'est pas activée côté EAS
   téléphone réinstallé ou prêté garde son jeton Expo, et sans réattribution
   l'ancien porteur recevrait les courses du nouveau.
 
+### Quel canal pour quel évènement
+
+`internal/notifications/politique.go` porte une **table explicite** (évènement
+× cible). Un couple absent ne déclenche rien : ajouter une notification est une
+décision prise là, pas un effet de bord d'un appel oublié ailleurs.
+
+| Cible | Canal | Pourquoi |
+| --- | --- | --- |
+| livreur | push | il a l'application, le joindre est gratuit |
+| partenaire | push | il suit son écran en direct |
+| destinataire | **2 SMS au plus** | il n'a pas l'application ; chaque SMS coûte une fraction de la commission |
+
+Les deux SMS sont « en route » (se rendre disponible) et « livrée » (clôt
+l'échange). Le garde-fou vit dans l'envoyeur et non chez l'appelant : un
+handler qui oublierait la vérification enverrait des messages hors budget.
+
+### Préférences par partenaire
+
+`notifications_desactivees` est une table d'**exclusions**, pas d'activations :
+ligne absente = on prévient. Stocker les activations aurait exigé d'écrire une
+ligne par évènement à la création de chaque partenaire, et un oubli aurait
+rendu quelqu'un silencieusement sourd.
+
+Les préférences ne peuvent que **restreindre** ce que la politique autorise,
+jamais l'élargir — sinon le plafond de SMS serait contournable par un réglage.
+La lecture est ouverte au collaborateur, l'écriture réservée au compte
+principal.
+
 **Non fait** : la partie application mobile — demander la permission, obtenir
 le jeton, l'enregistrer. Elle ne se vérifie qu'avec un appareil réel.
+
+**Non fait non plus** : la passerelle SMS. `SMSNonConfigure` échoue
+explicitement plutôt que de simuler, comme le repli PSTN du masquage.
 
 ### Évènements en direct côté partenaire
 
