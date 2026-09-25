@@ -1,3 +1,5 @@
+import type { Trajet } from './CarteTrajet';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8090';
 const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL ?? 'ws://localhost:8090';
 
@@ -106,6 +108,60 @@ export interface EvenementCourse {
   destinataire_nom: string;
   adresse_arrivee: string;
   horodatage: string;
+}
+
+/** Une étape du déroulé, telle que le journal l'a retenue. */
+export interface EvenementJournal {
+  type: string;
+  auteur_nom?: string;
+  auteur_role?: string;
+  details?: Record<string, string>;
+  horodatage: string;
+}
+
+
+/** Preuve de remise : ce qui atteste que le colis est arrivé, et à qui.
+ *  Absente quand le livreur n'a rien déposé — ce n'est pas une anomalie, la
+ *  remise n'est pas conditionnée à une signature. */
+export interface Preuve {
+  nom_receptionnaire?: string;
+  type_media?: 'signature' | 'photo';
+  media_mime?: string;
+  media_octets?: number;
+  livreur_nom?: string;
+  /** Instant de la capture à la porte, distinct de `recue_le` : sur un réseau
+   *  qui vacille, la preuve arrive parfois longtemps après. */
+  capture_le: string;
+  recue_le: string;
+}
+
+/**
+ * Reçu imprimable d'une commande.
+ *
+ * Deux absences volontaires, à ne pas « compléter » plus tard sans y penser :
+ * aucun montant (le barème est un abonnement plus une commission, pas un tarif
+ * par course) et aucun nom de livreur (le serveur ne l'envoie pas à cette
+ * audience — la garantie de masquage vaut aussi sur papier).
+ */
+export interface Recu {
+  numero: string;
+  statut: StatutCourse;
+  compagnie_nom: string;
+  partenaire_nom?: string;
+  destinataire_nom: string;
+  adresse_depart: string;
+  repere_depart?: string;
+  adresse_arrivee: string;
+  repere_arrivee?: string;
+  description_colis?: string;
+  instructions?: string;
+  cree_par_nom?: string;
+  journal: EvenementJournal[];
+  preuve?: Preuve;
+  cree_le: string;
+  /** Instant du tirage, distinct de la création : deux impressions du même
+   *  reçu portent des instants différents, et c'est ce qu'on veut savoir. */
+  emis_le: string;
 }
 
 /** Position relayée pour le suivi. Volontairement sans identifiant de livreur :
@@ -311,6 +367,20 @@ export const api = {
       body: JSON.stringify(brouillon),
     }),
 
+  recu: (id: string) => requete<Recu>(`/api/commandes/${id}/recu`),
+
+  /**
+   * Génère (ou réutilise) le lien de reçu partageable par WhatsApp. Aucun
+   * numéro n'est ciblé : la plateforme ne connaît que `telephone_hash`,
+   * jamais le numéro en clair du destinataire.
+   */
+  trajet: (id: string) => requete<Trajet>(`/api/commandes/${id}/trajet`),
+
+  lienPartageRecu: (id: string) =>
+    requete<{ url: string; expire_le: string }>(`/api/commandes/${id}/lien-partage`, {
+      method: 'POST',
+    }),
+
   annulerCommande: (id: string) =>
     requete<void>(`/api/commandes/${id}/annuler`, { method: 'POST' }),
 
@@ -343,6 +413,27 @@ export const api = {
   annulerInvitation: (id: string) =>
     requete<void>(`/api/mon-partenaire/invitations/${id}`, { method: 'DELETE' }),
 };
+
+
+/**
+ * Rend l'image d'une preuve sous forme d'URL d'objet, à révoquer par
+ * l'appelant.
+ *
+ * Elle ne peut pas être posée directement dans un `<img src>` : l'attribut ne
+ * transporte pas d'en-tête `Authorization`, et l'endpoint est authentifié.
+ * Une URL signée à durée courte serait l'autre option — elle ajouterait un
+ * mécanisme de signature pour un seul usage.
+ *
+ * Rend `null` quand il n'y a pas d'image : une preuve peut n'être qu'un nom.
+ */
+export async function urlMediaPreuve(courseId: string): Promise<string | null> {
+  await assurerJetonFrais();
+  const rep = await fetch(`${API_BASE_URL}/api/courses/${courseId}/preuve/media`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  if (!rep.ok) return null;
+  return URL.createObjectURL(await rep.blob());
+}
 
 export function urlWebSocketEvenements(): string {
   return `${WS_BASE_URL}/ws/partenaire/evenements?token=${encodeURIComponent(token ?? '')}`;

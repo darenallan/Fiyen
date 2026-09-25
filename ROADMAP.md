@@ -1,4 +1,4 @@
-# Roadmap Fiyen — point par point
+t# Roadmap Fiyen — point par point
 
 Découpage opérationnel de [PLAN-V2-PORTAIL-PARTENAIRES.md](PLAN-V2-PORTAIL-PARTENAIRES.md).
 **Un point = un morceau livrable, vérifiable, qu'on coche.**
@@ -115,10 +115,29 @@ une réponse du client en dernier.
     démarrage) font échouer les tests. `-race` propre. Et en vrai : 2 sessions
     vieillies supprimées, la récente épargnée, passage journalisé.
 
-- [ ] **D5 — Intégration continue** · 1 j
-  - `go test ./...` avec `FIYEN_TESTS_INTEGRATION=1` (sinon les tests
-    s'ignorent et la CI passe au vert sans rien vérifier), plus `tsc` des 5 fronts.
-  - *Fait quand* : une pull request qui casse un test est refusée.
+- [x] **D5 — Intégration continue** · 1 j *(`.github/workflows/ci.yml`)*
+  - Deux travaux : le backend (Postgres **PostGIS** + Redis en services,
+    migrations, `gofmt`, `go vet`, `go test -race`) et les fronts (matrice des
+    5 projets, `npm ci`, types, build).
+  - `FIYEN_TESTS_INTEGRATION=1` : sans lui, les tests d'intégration s'ignorent
+    quand la base manque et la CI passe au vert sans rien vérifier. C'est
+    arrivé en local pendant 3.4 — ça n'aurait pas été visible ici.
+  - `-race` : plusieurs handlers publient en goroutine (notifications,
+    évènements, purge). Une course y est invisible sans le détecteur.
+  - **Défaut trouvé en vérifiant la CI, et bien plus large qu'elle** :
+    `npx tsc --noEmit` ne vérifiait **rien**. Le `tsconfig.json` de ces projets
+    Vite déclare `"files": []` et délègue à des *project references* ; sans
+    `-b`, `tsc` ne compile rien et rend 0 quoi qu'il arrive. J'ai utilisé cette
+    commande toute la session en croyant valider les fronts. Corrigé en
+    `tsc -b --noEmit`, et les 5 fronts passent la vraie vérification.
+  - *Vérifié* : chaque barrière attrape une régression introduite exprès —
+    fichier mal formaté, code qui ne compile pas, test cassé, erreur de type.
+    `npm ci --dry-run` passe sur les 5 projets (aucun lock désynchronisé), et
+    toute la chaîne backend tourne sans fichier `.env`, comme en CI.
+
+> **Non vérifié** : le workflow n'a jamais tourné sur GitHub — il n'y a pas eu
+> de push. Chaque commande a été éprouvée localement dans les conditions de la
+> CI, mais la première exécution réelle reste à observer.
 
 - [ ] **D6 — Déploiement et TLS** · 2–3 j
   - *Fait quand* : les 5 fronts et l'API répondent en HTTPS sur un domaine.
@@ -264,15 +283,155 @@ les frais transporteur sont avancés puis refacturés ou payés directement.*
 
 🔒 *Attend du client : quels documents papier remplacer exactement.*
 
-- [ ] **5.1 — Migration `evenements_course`** (journal horodaté)
-- [ ] **5.2 — Migration `traces_positions`** en append-only
-- [ ] **5.3 — Reçu imprimable** (`@media print`), numéroté par compagnie
-  - Le numéro court `FY-1042` existe déjà et sert de référence.
+- [x] **5.1 — Migration `evenements_course`** (journal horodaté) *(`0010`)*
+  - **Immuable par la base, pas par convention** : un trigger refuse tout
+    `UPDATE`. Une convention de code ne survit pas au premier script de
+    correction lancé à la main, et un journal qu'on peut réécrire ne prouve
+    rien.
+  - La **suppression** reste permise : la cascade depuis `courses` en a besoin,
+    et la rétention (5.8) aussi. Ce qui compte pour une preuve, c'est qu'un
+    évènement ne soit pas *altéré*.
+  - Le rôle de l'auteur est **recopié**, pas joint : un compte peut changer de
+    rôle, et le journal doit dire ce qui était vrai à l'instant de l'action.
+  - Branché aux quatre points de changement d'état, **dans la transaction** :
+    l'évènement et le changement tombent ou passent ensemble.
+  - Une écriture de journal qui échoue **ne fait pas échouer la livraison** :
+    perdre une ligne de trace est moins grave que bloquer le livreur.
+- [x] **5.2 — Migration `traces_positions`** en append-only *(`0010`)*
+  - `positions_livreurs` écrase à chaque envoi : elle dit « où est le livreur
+    maintenant », pas « par où est-il passé ».
+  - Rattachée au **livreur** et non à la course : au moment où une position
+    arrive, le livreur peut n'avoir aucune course, et retrouver la course
+    courante coûterait une requête toutes les trois secondes. Le trajet se
+    reconstitue en croisant avec les bornes de `evenements_course` — 5.1 sert 5.2.
+  - Index **unique** sur `(livreur_id, horodatage)` : l'app mobile réémet un
+    lot après une coupure, et un doublon ferait un aller-retour fantôme sur le
+    tracé. Vérifié en rejouant un lot : 3 points, 3 horodatages.
+  - *Vérifié* : 7 tests Go, dont l'immuabilité — retirer le trigger fait
+    échouer le test. Et en vrai : le journal du jeu de démonstration montre
+    `creee → assignee` avec le rôle de l'auteur.
+
+> **Le volume rendra la rétention (5.8) nécessaire plus vite que « reportable »
+> ne le suggère** : un livreur en service 8 h à une position toutes les 4 s
+> produit ~7 000 lignes par jour. Vingt livreurs, c'est 4 millions de lignes
+> par mois.
+- [x] **5.3 — Reçu imprimable** (`@media print`), numéroté par compagnie
+  - Le numéro court `FY-1042` **est** la référence : aucune numérotation propre
+    au reçu, qui obligerait à demander « lequel des deux ? » à chaque appel.
+  - Deux audiences, un seul chargement : `GET /api/courses/:id/recu`
+    (compagnie, **avec** le livreur) et `GET /api/commandes/:id/recu`
+    (partenaire, **sans**). Le retrait se fait à un seul endroit
+    (`chargerRecu`), celui qu'on relit quand on doute.
+  - Le titre suit l'avancement — « Bon de commande » avant la livraison, « Reçu
+    de livraison » après : appeler « reçu » un colis pas encore parti serait
+    faux sur un papier qu'on classe.
+  - **Aucun montant**, ici comme ailleurs (voir 6.5).
+  - Générique et volontairement pauvre : à reprendre quand le client aura dit
+    quels documents papier il remplace.
+  - Tests : 5 tests Go (cloisonnement, masquage, journal, absence de montant),
+    `test-recu.mjs` (23, parcours complet contre l'API),
+    `test-recu-ui.mjs` (42, les deux applications en média « print », PDF à
+    l'appui).
 - [ ] **5.4 — Variante interurbaine du reçu** 🔒 *dépend de la Phase 4*
-- [ ] **5.5 — Preuve de livraison** : signature ou photo + nom du réceptionnaire
-- [ ] **5.6 — Lien partageable par WhatsApp**
-- [ ] **5.7 — Rejeu du trajet sur la carte**
-- [ ] **5.8 — *(reportable)* Politique de rétention des traces**
+- [x] **5.5 — Preuve de livraison** : signature ou photo + nom du réceptionnaire
+  - **Découplée du passage à « livrée »** : la course se clôt d'abord, la
+    preuve part ensuite et attend dans une file locale si le réseau lâche.
+    Conditionner la clôture à la montée d'une image laisserait un livreur
+    bloqué devant un portail.
+  - **Tout est facultatif.** Un écran qui ne prend pas le tracé, un appareil
+    photo qui refuse de démarrer : le colis a quand même été remis. Exiger la
+    preuve ne la ferait pas apparaître, elle créerait une incitation à la
+    fabriquer.
+  - **Une par course, immuable** (`preuves_livraison`, trigger `UPDATE`) : une
+    pièce qu'on peut réécrire ne prouve rien. Un second dépôt rend 409.
+  - `capture_le` (la porte) est distinct de `created_at` (le serveur). Une date
+    *future* est ignorée : une horloge déréglée ferait dater la signature de
+    demain sur un document imprimé.
+  - Image bornée à **512 Ko**, allowlist MIME, redimensionnement côté appareil
+    à 1024 px / JPEG 0,7. Elle voyage **hors du reçu** : jointe, elle serait
+    retéléchargée à chaque ouverture.
+  - Le partenaire et le destinataire y ont accès, **jamais au nom du livreur**.
+  - Tests : 13 tests Go, `test-recu.mjs` (37), `test-remise-ui.mjs` (15 — le
+    tracé au doigt jusqu'aux pixels réellement peints en base).
+- [x] **5.6 — Lien partageable par WhatsApp**
+  - **Un seul jeton par course, réutilisé tant qu'il est valide** — pas
+    empilé à chaque clic sur « Partager » : `liens_partages_recu`, table
+    dédiée, 90 jours de validité. Contrairement au jeton de renouvellement, il
+    n'est **pas haché** : sa portée est un reçu en lecture seule, pas un
+    compte, et il doit pouvoir être ressorti tel quel pour la réutilisation.
+  - **La page publique (`GET /r/:jeton`) est rendue en HTML côté serveur**,
+    pas en JSON — celui qui l'ouvre n'a pas d'application. `html/template`
+    plutôt qu'une concaténation : c'est le seul document du produit dont le
+    contenu (adresses, noms) est injecté directement dans du HTML servi à un
+    inconnu, l'échappement automatique n'est pas négociable.
+  - **La garantie de masquage s'applique sans condition de rôle** : la page
+    réutilise `chargerRecu(..., avecLivreur=false)`, comme le reçu du
+    partenaire — quel que soit qui a généré le lien, compagnie comprise.
+  - **`wa.me/?text=...` sans numéro de destinataire** : la plateforme ne
+    connaît que `telephone_hash`, jamais le numéro en clair. C'est la personne
+    qui partage qui choisit le contact depuis son propre téléphone.
+  - Un jeton inconnu et un jeton expiré rendent le **même** 404 : les
+    distinguer n'apprendrait rien à quelqu'un qui devine.
+  - Tests : 7 tests Go, `test-partage-ui.mjs` (14, les deux applications,
+    `window.open` espionné plutôt qu'une vraie navigation vers wa.me).
+  - **Mutation trouvée pendant la vérification** : le contrôle d'appartenance
+    de la course pour la génération côté compagnie n'avait pas de test
+    dédié — une compagnie quelconque pouvait générer le lien de n'importe
+    quelle course. `TestLienPartage_UneAutreCompagnieNePeutPasEnGenererUn`
+    comble le trou.
+  - **Dette découverte en cours de route, corrigée** : `dashboard/vite.config.ts`
+    était le seul des 4 projets sans port fixe (`strictPort`) — un port 5173
+    déjà pris a fait glisser le dashboard sur celui d'un projet sans rapport,
+    en silence. Alignée sur les trois autres.
+- [x] **5.7 — Rejeu du trajet sur la carte**
+  - **`traces_positions` n'est pas rattachée à la course, mais au livreur** :
+    le trajet se reconstitue en croisant deux sources — le livreur assigné
+    (une course a un seul livreur, jamais réassigné une fois « assignee ») et
+    les bornes temporelles du journal (`assignee` → `livree`/`annulee`).
+  - **Aucune identité de livreur n'y circule** : un point GPS n'est jamais
+    nommé, la même donnée sert donc aux deux audiences (compagnie et
+    partenaire) sans variante `avecLivreur`.
+  - Épingles de départ/arrivée reprises depuis `courses.point_depart` /
+    `point_arrivee` **quand elles ont été posées** — facultatives, comme
+    partout ailleurs dans la commande.
+  - **Chargement différé** : le bouton « Voir sur la carte » ne récupère le
+    trajet qu'au clic, pas à l'ouverture du reçu — la plupart des consultations
+    n'en ont pas besoin.
+  - **Scope volontairement limité aux deux apps authentifiées** (dashboard,
+    app-partenaire), pas à la page publique partagée (5.6) : Leaflet + tuiles
+    coûteraient des données sur une page pensée pour être légère sur un
+    téléphone quelconque, et le journal y porte déjà les horodatages en texte.
+  - Tests : 7 tests Go (fenêtre temporelle, cloisonnement par livreur et par
+    partenaire, épingles facultatives), `test-trajet-ui.mjs` (13 — dépôt de
+    positions réel, rendu Leaflet vérifié dans les deux apps, bascule
+    affiche/masque).
+  - **Dette découverte en vérifiant, sans rapport avec ce point** : les tuiles
+    CARTO gratuites (`basemaps.cartocdn.com`, utilisées par les 3 cartes du
+    produit) affichent désormais un filigrane « API KEY REQUIRED ». Visible
+    sur les captures de `test-trajet-ui.mjs`, pas introduit par ce point —
+    signalé en dette plus bas.
+- [x] **5.8 — Politique de rétention des traces** *(`0013`, `internal/tracking/retention.go`)*
+  - **Passé de « reportable » à fait** : ~7 000 lignes par livreur et par jour,
+    quatre millions par mois pour vingt livreurs — la table aurait été le
+    premier poste de la base.
+  - Positions de plus de **90 jours** supprimées (`TRACES_RETENTION_JOURS`),
+    passage au démarrage puis toutes les `PURGE_INTERVALLE_HEURES`. Le journal
+    et les preuves ne sont **pas** concernés : ce sont des pièces, pas de la
+    télémétrie.
+  - **Suppression par lots de 20 000** : le premier passage sur une table déjà
+    grosse ne doit pas tenir des millions de lignes d'un seul tenant. D'où un
+    verrou consultatif **de session** (et non `_xact_lock` comme pour les
+    sessions) : il doit couvrir tous les lots, pas une seule transaction.
+  - **Une durée nulle ou négative est refusée** : `now() - 0` viderait la table.
+    Une variable d'environnement mal réglée ne doit pas pouvoir effacer le
+    trajet de tous les livreurs — repli sur 90 jours, dit au journal.
+  - Index `idx_traces_horodatage` : l'index unique existant sert le rejeu par
+    livreur, pas une purge par âge.
+  - **Conséquence produit** : le rejeu d'un trajet (5.7) d'une course de plus de
+    90 jours n'a plus de points. Le message de la carte le dit.
+  - Tests : 9 (`retention_test.go`), dont ce qu'elle **épargne** de part et
+    d'autre de la frontière. Six mutations font échouer les tests (borne
+    décalée, un seul lot, garde de durée, verrou non pris, verrou non relâché).
 
 ---
 

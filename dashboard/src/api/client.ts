@@ -173,6 +173,27 @@ export const api = {
   delete: <T>(path: string) => requete<T>(path, { method: 'DELETE' }),
 };
 
+
+/**
+ * Rend l'image d'une preuve sous forme d'URL d'objet, à révoquer par
+ * l'appelant.
+ *
+ * Elle ne peut pas être posée directement dans un `<img src>` : l'attribut ne
+ * transporte pas d'en-tête `Authorization`, et l'endpoint est authentifié.
+ * Une URL signée à durée courte serait l'autre option — elle ajouterait un
+ * mécanisme de signature pour un seul usage.
+ *
+ * Rend `null` quand il n'y a pas d'image : une preuve peut n'être qu'un nom.
+ */
+export async function urlMediaPreuve(courseId: string): Promise<string | null> {
+  await assurerJetonFrais();
+  const rep = await fetch(`${API_BASE_URL}/api/courses/${courseId}/preuve/media`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  if (!rep.ok) return null;
+  return URL.createObjectURL(await rep.blob());
+}
+
 export function wsUrl(path: string): string {
   const base = (import.meta.env.VITE_WS_BASE_URL as string) ?? 'ws://localhost:8090';
   const sep = path.includes('?') ? '&' : '?';

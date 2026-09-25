@@ -199,6 +199,22 @@ async function requete<T>(path: string, options: RequestInit = {}, rejeu = false
   return (await res.json()) as T;
 }
 
+/**
+ * Ce que le livreur recueille à la porte : un nom, et une signature ou une
+ * photo. L'un des deux suffit — exiger une image bloquerait un livreur dont
+ * l'écran ne prend pas le tracé, et créerait surtout une incitation à la
+ * fabriquer.
+ */
+export interface BrouillonPreuve {
+  nom_receptionnaire?: string;
+  type_media?: 'signature' | 'photo';
+  media_mime?: string;
+  media_base64?: string;
+  /** Instant de la capture sur l'appareil, distinct de l'instant d'envoi : sur
+   *  un réseau qui vacille, la preuve part parfois longtemps après la porte. */
+  capture_le?: string;
+}
+
 export const api = {
   login: (telephone: string, motDePasse: string) =>
     requete<{ token: string; refresh_token: string; role: string }>('/api/auth/login', {
@@ -220,6 +236,19 @@ export const api = {
     requete<{ statut: StatutCourse }>(`/api/courses/${courseId}/statut`, {
       method: 'PATCH',
       body: JSON.stringify({ statut }),
+    }),
+
+  /**
+   * Dépose la preuve de remise. 204 en cas de succès.
+   *
+   * Appelée **après** le passage à « livrée » : conditionner la clôture d'une
+   * course à la montée d'une image bloquerait le livreur derrière un réseau
+   * qui vacille.
+   */
+  deposerPreuve: (courseId: string, preuve: BrouillonPreuve) =>
+    requete<void>(`/api/courses/${courseId}/preuve`, {
+      method: 'POST',
+      body: JSON.stringify(preuve),
     }),
 
   sessionMasquage: (courseId: string) =>

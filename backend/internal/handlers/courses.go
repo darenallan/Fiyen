@@ -65,6 +65,8 @@ func (d *Deps) CreerCourse(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "création course échouée")
 	}
 
+	journaliser(ctx, tx, courseID, EvtJournalCreee, claims, nil)
+
 	if err := tx.Commit(ctx); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "erreur interne")
 	}
@@ -149,6 +151,12 @@ func (d *Deps) AssignerCourse(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "assignation échouée")
 	}
 
+	// Le livreur est noté dans les détails : sans lui, le journal dirait qu'une
+	// assignation a eu lieu sans dire à qui, ce qui n'aide personne.
+	journaliser(ctx, tx, courseID, EvtJournalAssignee, claims, map[string]string{
+		"livreur_id": body.LivreurID.String(),
+	})
+
 	if _, err := tx.Exec(ctx,
 		`UPDATE livreurs SET statut = $1 WHERE id = $2`,
 		models.LivreurEnCourse, body.LivreurID,
@@ -226,6 +234,8 @@ func (d *Deps) MettreAJourStatutCourse(c *fiber.Ctx) error {
 	); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "mise à jour échouée")
 	}
+
+	journaliser(ctx, tx, courseID, string(body.Statut), claims, nil)
 
 	if body.Statut == models.CourseLivree || body.Statut == models.CourseAnnulee {
 		if _, err := tx.Exec(ctx,

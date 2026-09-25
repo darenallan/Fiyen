@@ -19,6 +19,7 @@ import (
 	"fiyen-backend/internal/middleware"
 	"fiyen-backend/internal/models"
 	"fiyen-backend/internal/notifications"
+	"fiyen-backend/internal/tracking"
 )
 
 func main() {
@@ -127,6 +128,26 @@ func main() {
 	coursesGroup.Get("/:id/masquage", middleware.RolesRequis(models.RoleLivreur, models.RoleDestinataire), deps.ObtenirSessionMasquage)
 	coursesGroup.Patch("/:id/assigner", middleware.RolesRequis(models.RoleCompagnie), deps.AssignerCourse)
 	coursesGroup.Patch("/:id/statut", middleware.RolesRequis(models.RoleLivreur), deps.MettreAJourStatutCourse)
+	// Le reçu de la compagnie porte le nom du livreur ; celui du partenaire
+	// non — la garantie de masquage vaut aussi sur papier.
+	coursesGroup.Get("/:id/recu", middleware.RolesRequis(models.RoleCompagnie), deps.RecuCourse)
+	coursesGroup.Post("/:id/lien-partage", middleware.RolesRequis(models.RoleCompagnie), deps.GenererLienRecuCourse)
+	coursesGroup.Get("/:id/trajet", middleware.RolesRequis(models.RoleCompagnie), deps.TrajetCourse)
+
+	// Preuve de livraison. Le dépôt est réservé au livreur assigné ; la lecture
+	// est ouverte aux quatre parties de la course, chacune vérifiée en base par
+	// le handler — d'où l'absence de RolesRequis ici.
+	//
+	// Limite propre : une preuve part avec une image, et l'app rejoue sa file
+	// après une coupure. La limite du dépôt de positions serait trop serrée,
+	// celle du login absurde.
+	coursesGroup.Post("/:id/preuve",
+		middleware.RolesRequis(models.RoleLivreur),
+		limiter.New(limiter.Config{Max: 30, Expiration: time.Minute}),
+		deps.DeposerPreuve,
+	)
+	coursesGroup.Get("/:id/preuve", deps.LirePreuve)
+	coursesGroup.Get("/:id/preuve/media", deps.LireMediaPreuve)
 
 	// --- Partenaires et collaborateurs ---
 	//
@@ -179,6 +200,9 @@ func main() {
 	// déclaré avant /:id, sinon "carnet" serait capturé comme identifiant
 	commandes.Get("/carnet", deps.CarnetDestinataires)
 	commandes.Get("/:id", deps.ObtenirCoursePartenaire)
+	commandes.Get("/:id/recu", deps.RecuCommande)
+	commandes.Post("/:id/lien-partage", deps.GenererLienRecuCommande)
+	commandes.Get("/:id/trajet", deps.TrajetCommande)
 	commandes.Post("/:id/annuler", deps.AnnulerCoursePartenaire)
 
 	// La file des commandes entrantes vit sous /dashboard et non à la racine :
@@ -258,6 +282,21 @@ func main() {
 		websocket.New(deps.MasquageWS),
 	)
 
+	// --- Reçu partagé (public, sans authentification) ---
+	//
+	// Le destinataire n'a pas de compte : ce que la garantie de masquage exige
+	// ici, aucun rôle ne peut la faire respecter, donc le handler applique
+	// systématiquement la même restriction que le reçu du partenaire.
+	// Limite large mais présente : la protection tient à l'entropie du jeton
+	// (256 bits), pas à ce plafond, qui n'est qu'une hygiène de base contre le
+	// bourrinage.
+	lienPartageLimiter := limiter.New(limiter.Config{
+		Max:        60,
+		Expiration: time.Minute,
+	})
+	app.Get("/r/:jeton", lienPartageLimiter, deps.RecuPartage)
+	app.Get("/r/:jeton/preuve/media", lienPartageLimiter, deps.MediaPreuvePartage)
+
 	// Deux points de contrôle, aux conséquences distinctes :
 	//   /health       interroge Postgres et Redis → sonde de *readiness*
 	//   /health/live  répond tant que le processus tourne → sonde de *liveness*
@@ -273,6 +312,16 @@ func main() {
 	defer arreterFond()
 	go auth.PurgerPeriodiquement(
 		ctxFond, pool,
+		time.Duration(cfg.PurgeIntervalleH)*time.Hour,
+		log.Default(),
+	)
+
+	// Rétention des traces de position : ~7 000 lignes par livreur et par jour,
+	// sans purge la base grossit sans fin. Même intervalle que la purge des
+	// sessions — deux ménages, un seul réglage.
+	go tracking.PurgerTracesPeriodiquement(
+		ctxFond, pool,
+		time.Duration(cfg.TracesRetentionJours)*24*time.Hour,
 		time.Duration(cfg.PurgeIntervalleH)*time.Hour,
 		log.Default(),
 	)

@@ -875,14 +875,23 @@ button.discret {
   box-shadow: 0 0 12px 1px var(--or-halo);
 }
 
-.nav-bas .icone {
-  width: 22px;
-  height: 22px;
+/* Les icônes du projet sont des tracés sans attribut de peinture : sans cette
+   règle, le navigateur applique son défaut — `fill: black`, aucun trait — et
+   sort un aplat noir à la taille intrinsèque du SVG. */
+.icone {
+  width: 18px;
+  height: 18px;
+  flex: none;
   stroke: currentColor;
   fill: none;
   stroke-width: 1.9;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.nav-bas .icone {
+  width: 22px;
+  height: 22px;
 }
 
 .nav-point {
@@ -1131,3 +1140,141 @@ button.danger {
 .heros.heros-sourd::after { display: none; }
 
 .muted { color: var(--tx-clair-muet); font-size: 14px; }
+
+
+/* ------------------------------------------------------------------
+   Écran de remise : nom du réceptionnaire, signature ou photo
+   ------------------------------------------------------------------ */
+
+.surtitre {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--tx-sombre-muet, #a9bdb0);
+  margin: 0 0 6px;
+}
+
+.aide {
+  color: var(--tx-clair-muet, #55605a);
+  font-size: 13px;
+  margin: 8px 0 0;
+}
+
+button.lien {
+  width: auto;
+  min-height: 0;
+  padding: var(--e-2) 0;
+  background: none;
+  /* La règle de base pose un halo moutarde sur tout `button` ; un lien texte
+     l'afficherait comme un cartouche lumineux flottant. */
+  box-shadow: none;
+  color: var(--vert);
+  font-family: var(--corps);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+button.lien::after { display: none; }
+
+button.lien:hover:not(:disabled) {
+  box-shadow: none;
+  filter: none;
+  color: var(--vert-3);
+}
+
+button.lien:disabled { opacity: 0.45; }
+
+button.lien.retour { margin-bottom: var(--e-3); }
+
+.onglets-preuve {
+  display: flex;
+  gap: 6px;
+  margin-bottom: var(--e-3);
+}
+
+.onglet-preuve {
+  flex: 1;
+  min-height: 40px;
+  padding: 8px 6px;
+  font-size: 13px;
+  background: var(--creme-2);
+  color: var(--tx-clair);
+  box-shadow: none;
+  border-radius: var(--r-sm);
+}
+
+.onglet-preuve::after { display: none; }
+
+/* L'onglet actif ne se distingue pas que par sa couleur : un trait le souligne,
+   sans quoi le choix serait illisible en niveaux de gris ou en plein soleil. */
+.onglet-preuve.actif {
+  background: var(--vert);
+  color: var(--tx-sombre);
+  box-shadow: inset 0 -3px 0 0 var(--or);
+}
+
+.bloc-signature {
+  border: 1px dashed var(--creme-2);
+  border-radius: var(--r-sm);
+  padding: 8px;
+  background: #fff;
+}
+
+.toile-signature {
+  display: block;
+  width: 100%;
+  height: 180px;
+  /* `touch-action: none` est indispensable : sans lui, le geste de tracé est
+     interprété comme un défilement et la signature ne s'écrit pas. */
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.pied-signature {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 6px;
+}
+
+.pied-signature .aide { margin: 0; }
+
+.zone-photo img {
+  width: 100%;
+  border-radius: var(--r-sm);
+  margin-bottom: var(--e-3);
+}
+
+/* Un `input[type=file]` ne se met pas aux couleurs de l'application : le label
+   fait le bouton, l'input reste accessible au clavier mais hors du flux. */
+.bouton-fichier {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  border-radius: var(--r-sm);
+  background: var(--or);
+  color: var(--vert);
+  font-family: var(--titre);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bouton-fichier input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bouton-fichier:focus-within {
+  outline: 3px solid var(--vert);
+  outline-offset: 2px;
+}

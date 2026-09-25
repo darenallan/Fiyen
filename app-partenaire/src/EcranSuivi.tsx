@@ -37,10 +37,12 @@ const ETAPES: { statut: StatutCourse; libelle: string; explication: string }[] =
 export function EcranSuivi({
   commandeID,
   onRetour,
+  onRecu,
   version = 0,
 }: {
   commandeID: string;
   onRetour: () => void;
+  onRecu: () => void;
   /** Incrementee a chaque evenement recu. Seule la fiche est rechargee : la
    *  carte et la socket de position restent en place, les recreer ferait
    *  scintiller l'ecran a chaque changement de statut. */
@@ -376,6 +378,14 @@ export function EcranSuivi({
           )}
         </dl>
       </section>
+
+      {/* Disponible à tout statut : avant la livraison le document fait office
+          de bon de commande, après il fait office de reçu. Le réserver à
+          « livrée » priverait le partenaire du justificatif au moment où il en
+          a le plus besoin — quand il confie le colis. */}
+      <button type="button" className="contour bloc" onClick={onRecu}>
+        Voir le reçu
+      </button>
 
       {commande.statut === 'en_attente' && (
         <button type="button" className="contour danger bloc" onClick={annuler} disabled={annulation}>

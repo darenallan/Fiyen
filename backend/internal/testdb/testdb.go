@@ -48,10 +48,7 @@ func indisponible(t *testing.T, format string, args ...any) {
 func Ouvrir(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 
-	url := os.Getenv("DATABASE_URL")
-	if url == "" {
-		url = valeurEnv(t, "DATABASE_URL")
-	}
+	url := reglage(t, "DATABASE_URL")
 	if url == "" {
 		indisponible(t, "DATABASE_URL absente et backend/.env introuvable")
 	}
@@ -70,6 +67,20 @@ func Ouvrir(t *testing.T) *pgxpool.Pool {
 
 	t.Cleanup(pool.Close)
 	return pool
+}
+
+// reglage lit un paramètre : l'environnement d'abord, le `.env` du backend
+// ensuite.
+//
+// L'ordre compte. En intégration continue il n'y a pas de fichier `.env` et
+// tout vient de l'environnement ; en local c'est l'inverse. Lire le fichier en
+// premier ferait ignorer une variable posée exprès pour une exécution.
+func reglage(t *testing.T, cle string) string {
+	t.Helper()
+	if v := os.Getenv(cle); v != "" {
+		return v
+	}
+	return valeurEnv(t, cle)
 }
 
 // valeurEnv remonte l'arborescence jusqu'au .env du backend : `go test`
@@ -106,17 +117,17 @@ func valeurEnv(t *testing.T, cle string) string {
 func OuvrirRedis(t *testing.T) *redis.Client {
 	t.Helper()
 
-	addr := os.Getenv("REDIS_ADDR")
-	if addr == "" {
-		addr = valeurEnv(t, "REDIS_ADDR")
-	}
+	addr := reglage(t, "REDIS_ADDR")
 	if addr == "" {
 		addr = "localhost:6379"
 	}
 
 	client := redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: valeurEnv(t, "REDIS_PASSWORD"),
+		Addr: addr,
+		// Le mot de passe suit la même règle que l'adresse : environnement
+		// d'abord, `.env` ensuite. Ne lire que le fichier ferait échouer les
+		// tests sur une intégration continue où Redis en demande un.
+		Password: reglage(t, "REDIS_PASSWORD"),
 	})
 
 	ctx, annuler := context.WithTimeout(context.Background(), 3*time.Second)

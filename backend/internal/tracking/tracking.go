@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -65,6 +66,24 @@ func EnregistrerPosition(ctx context.Context, rdb *redis.Client, pool *pgxpool.P
 	}
 	if err := rdb.Publish(ctx, canalFlotteCompagnie(compagnieID), payload).Err(); err != nil {
 		return fmt.Errorf("publish flotte: %w", err)
+	}
+
+	// La trace, elle, garde **tout** — y compris un rejeu plus ancien, qui a sa
+	// place dans le trajet même s'il arrive en retard. C'est ce qui distingue
+	// `traces_positions` de `positions_livreurs` : l'une raconte le chemin,
+	// l'autre dit seulement où le livreur se trouve maintenant.
+	//
+	// `ON CONFLICT DO NOTHING` : l'app mobile réémet un lot après une coupure,
+	// et un doublon ferait un aller-retour fantôme sur le tracé.
+	//
+	// L'échec n'interrompt pas : perdre un point de trace est moins grave que
+	// perdre la position courante, qui est ce dont dépend le suivi en direct.
+	if _, err := pool.Exec(ctx, `
+		INSERT INTO traces_positions (livreur_id, position, horodatage)
+		VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, $4)
+		ON CONFLICT (livreur_id, horodatage) DO NOTHING
+	`, livreurID, lon, lat, horodatage); err != nil {
+		log.Printf("trace : point perdu pour le livreur %s : %v", livreurID, err)
 	}
 
 	// La position courante (Redis GEO + table) ne doit refléter que la capture la

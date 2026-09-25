@@ -13,6 +13,7 @@ import { Login } from './Login';
 import { EcranCommandes } from './EcranCommandes';
 import { EcranCommander } from './EcranCommander';
 import { EcranSuivi } from './EcranSuivi';
+import { EcranRecu } from './EcranRecu';
 import { EcranProfil } from './EcranProfil';
 import { NavBas, type Onglet } from './composants/NavBas';
 import { Annonces } from './composants/Annonces';
@@ -29,7 +30,8 @@ import { useEvenements } from './useEvenements';
 type Vue =
   | { nom: 'liste' }
   | { nom: 'commander' }
-  | { nom: 'suivi'; id: string };
+  | { nom: 'suivi'; id: string }
+  | { nom: 'recu'; id: string };
 
 function roleCourant(): RolePartenaire {
   const jeton = getToken();
@@ -153,7 +155,12 @@ function EspacePartenaire({
           version={version}
           commandeID={vue.id}
           onRetour={() => setVue({ nom: 'liste' })}
+          onRecu={() => setVue({ nom: 'recu', id: vue.id })}
         />
+      )}
+
+      {onglet === 'commandes' && vue.nom === 'recu' && (
+        <EcranRecu commandeID={vue.id} onRetour={() => setVue({ nom: 'suivi', id: vue.id })} />
       )}
 
       {onglet === 'profil' && <EcranProfil role={role} onDeconnexion={onDeconnexion} />}

@@ -3,6 +3,9 @@ import { api, ApiError, type Course, type Livreur, type StatutCourse } from './a
 import { TrackingLivreur, type EtatTracking } from './tracking';
 import { ChatMasque } from './ChatMasque';
 import { Marque } from './Marque';
+import type { BrouillonPreuve } from './api';
+import { EcranRemise } from './EcranRemise';
+import { envoyerOuMettreEnAttente, rejouerFile } from './filePreuves';
 import { NavBas, type Onglet } from './composants/NavBas';
 import { IconeAlerte, IconeVerrou } from './composants/Icones';
 
@@ -44,6 +47,7 @@ export function EcranLivreur({ onDeconnexion }: { onDeconnexion: () => void }) {
   const [actionEnCours, setActionEnCours] = useState(false);
   const [etatTracking, setEtatTracking] = useState<EtatTracking>(ETAT_TRACKING_INITIAL);
   const [courseEnDiscussion, setCourseEnDiscussion] = useState<string | null>(null);
+  const [courseARemettre, setCourseARemettre] = useState<Course | null>(null);
   const [onglet, setOnglet] = useState<Onglet>('service');
 
   const trackingRef = useRef<TrackingLivreur | null>(null);
@@ -100,6 +104,12 @@ export function EcranLivreur({ onDeconnexion }: { onDeconnexion: () => void }) {
   }
 
   async function avancerCourse(course: Course, statut: StatutCourse) {
+    // La remise passe par un écran dédié : c'est le seul moment où l'on
+    // recueille quelque chose du destinataire, et le seul qui ne se rejoue pas.
+    if (statut === 'livree') {
+      setCourseARemettre(course);
+      return;
+    }
     setActionEnCours(true);
     try {
       await api.changerStatutCourse(course.id, statut);
@@ -110,6 +120,56 @@ export function EcranLivreur({ onDeconnexion }: { onDeconnexion: () => void }) {
       setActionEnCours(false);
     }
   }
+
+  /**
+   * Clôt la course, puis dépose la preuve.
+   *
+   * L'ordre compte et n'est pas symétrique : si la preuve échoue, la livraison
+   * reste enregistrée et la preuve part en file. L'inverse — conditionner la
+   * clôture à la montée d'une image — laisserait un livreur bloqué devant un
+   * portail avec une course qu'il ne peut pas fermer.
+   */
+  async function terminerRemise(course: Course, preuve: BrouillonPreuve | null) {
+    setActionEnCours(true);
+    setErreur(null);
+    try {
+      await api.changerStatutCourse(course.id, 'livree');
+    } catch (err) {
+      setErreur(err instanceof ApiError ? err.message : 'Mise à jour impossible');
+      setActionEnCours(false);
+      return;
+    }
+
+    if (preuve) {
+      try {
+        const partie = await envoyerOuMettreEnAttente(course.id, preuve);
+        if (!partie) {
+          setErreur('Livraison enregistrée. La preuve partira dès le retour du réseau.');
+        }
+      } catch (err) {
+        // Un refus définitif du serveur : le dire sans laisser croire que la
+        // livraison a échoué, car elle est passée.
+        setErreur(
+          'Livraison enregistrée, mais la preuve a été refusée : ' +
+            (err instanceof ApiError ? err.message : 'format invalide')
+        );
+      }
+    }
+
+    setCourseARemettre(null);
+    await rafraichir();
+    setActionEnCours(false);
+  }
+
+  // Une preuve mise de côté pendant une coupure doit repartir sans que le
+  // livreur ait à y penser : au démarrage, et dès que le navigateur signale
+  // le retour du réseau.
+  useEffect(() => {
+    void rejouerFile();
+    const auRetour = () => void rejouerFile();
+    window.addEventListener('online', auRetour);
+    return () => window.removeEventListener('online', auRetour);
+  }, []);
 
   function deconnecter() {
     trackingRef.current?.arreter();
@@ -126,6 +186,17 @@ export function EcranLivreur({ onDeconnexion }: { onDeconnexion: () => void }) {
   }
 
   const courseAAgir = courses.filter((c) => ETAPE_SUIVANTE[c.statut] !== undefined).length;
+
+  if (courseARemettre) {
+    return (
+      <EcranRemise
+        course={courseARemettre}
+        enCours={actionEnCours}
+        onRetour={() => setCourseARemettre(null)}
+        onValider={(preuve) => void terminerRemise(courseARemettre, preuve)}
+      />
+    );
+  }
 
   return (
     <>

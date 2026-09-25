@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { api, ApiError } from '../api/client';
 import type { Course, Livreur } from '../api/types';
+import { PanneauRecu } from '../components/PanneauRecu';
 
 const LIBELLES_STATUT: Record<string, string> = {
   en_attente: 'En attente',
@@ -26,6 +27,9 @@ export function Courses() {
   const [erreurCreation, setErreurCreation] = useState<string | null>(null);
 
   const [assignationsEnCours, setAssignationsEnCours] = useState<Record<string, string>>({});
+  // Course dont le reçu est ouvert. Une seule à la fois : le document
+  // s'imprime, et deux reçus superposés sortiraient tous les deux.
+  const [recuOuvert, setRecuOuvert] = useState<string | null>(null);
 
   async function chargerCourses() {
     setChargement(true);
@@ -189,6 +193,7 @@ export function Courses() {
                 <th>Statut</th>
                 <th>Créée le</th>
                 <th>Assignation</th>
+                <th>Reçu</th>
               </tr>
             </thead>
             <tbody>
@@ -229,12 +234,24 @@ export function Courses() {
                       '—'
                     )}
                   </td>
+                  <td>
+                    {/* Disponible à tout statut : avant la livraison le
+                        document fait office de bon de course, après il fait
+                        office de reçu. */}
+                    <button className="secondaire" onClick={() => setRecuOuvert(c.id)}>
+                      Voir
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
       </div>
+
+      {recuOuvert && (
+        <PanneauRecu courseId={recuOuvert} onFermer={() => setRecuOuvert(null)} />
+      )}
     </div>
   );
 }

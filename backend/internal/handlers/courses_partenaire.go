@@ -213,6 +213,8 @@ func (d *Deps) CreerCoursePartenaire(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "création de la course échouée")
 	}
 
+	journaliser(ctx, tx, course.ID, EvtJournalCreee, claims, nil)
+
 	if err := tx.Commit(ctx); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "erreur interne")
 	}
@@ -420,7 +422,16 @@ func (d *Deps) AnnulerCoursePartenaire(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "identifiant de course invalide")
 	}
 
-	tag, err := d.DB.Exec(c.Context(), `
+	// Transaction : l'annulation et sa trace doivent tomber ou passer ensemble,
+	// sinon le journal raconte une annulation qui n'a pas eu lieu.
+	ctx := c.Context()
+	tx, err := d.DB.Begin(ctx)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "erreur interne")
+	}
+	defer tx.Rollback(ctx)
+
+	tag, err := tx.Exec(ctx, `
 		UPDATE courses SET statut = 'annulee', updated_at = now()
 		WHERE id = $1 AND partenaire_id = $2 AND statut = 'en_attente'
 	`, courseID, *claims.PartenaireID)
@@ -432,6 +443,12 @@ func (d *Deps) AnnulerCoursePartenaire(c *fiber.Ctx) error {
 		// une seule réponse, pour ne pas révéler laquelle.
 		return fiber.NewError(fiber.StatusConflict,
 			"cette commande ne peut plus être annulée ici — contactez la compagnie")
+	}
+
+	journaliser(ctx, tx, courseID, EvtJournalAnnulee, claims, nil)
+
+	if err := tx.Commit(ctx); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "erreur interne")
 	}
 
 	d.publierEvenementCourse(courseID, models.CourseAnnulee)

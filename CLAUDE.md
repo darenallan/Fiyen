@@ -68,6 +68,8 @@ cd app-partenaire && npm run dev  # :5177
 
 `CORS_ORIGINS` (dans `backend/.env`) doit lister les origines des fronts, sinon le navigateur bloque tout.
 
+`URL_PUBLIQUE` (dans `backend/.env`) préfixe les liens de reçu partagés par WhatsApp — voir « Lien de reçu partageable » plus bas. C'est l'API elle-même qui rend cette page, il n'y a pas de front séparé à viser.
+
 ### Points de contrôle
 
 | Route | Question | Où la brancher |
@@ -111,6 +113,10 @@ Le schéma vit dans `backend/migrations/*.sql`, appliqué par `go run ./cmd/migr
 | MVP | `compagnies`, `utilisateurs`, `livreurs`, `destinataires`, `courses`, `positions_livreurs`, `sessions_masquage`, `messages_masques`, `config_tarifaire` |
 | Sessions longues | `sessions_refresh` |
 | V2 — partenaires | `partenaires`, `invitations_collaborateurs` |
+| V2 — notifications | `jetons_push`, `notifications_desactivees` |
+| V2 — traçabilité | `evenements_course`, `traces_positions` |
+| V2 — preuve | `preuves_livraison` |
+| V2 — lien partagé | `liens_partages_recu` |
 
 > **`clients` a été renommé `destinataires`** (migration `0006`), et le rôle
 > `client` est devenu `destinataire`. En V1 le mot était sans ambiguïté ;
@@ -241,6 +247,168 @@ annonce les changements de statut de ses commandes.
 - L'auteur d'une commande circule sur Redis pour ce filtrage mais est retiré
   avant d'atteindre le front.
 
+## Traçabilité
+
+`evenements_course` répond à « quand, et par qui » ; `traces_positions` à
+« par où ». Ni l'un ni l'autre ne se reconstitue après coup.
+
+- Les deux tables sont **immuables par la base** : un trigger refuse tout
+  `UPDATE`. Une convention de code ne survit pas au premier script de
+  correction lancé à la main.
+- La **suppression** reste permise — la cascade depuis `courses` en a besoin,
+  et la rétention aussi. Ce qui compte, c'est qu'une ligne ne soit pas altérée.
+- Le rôle de l'auteur est **recopié** dans le journal, pas joint : un compte
+  peut changer de rôle, et le journal doit dire ce qui était vrai à l'instant.
+- `traces_positions` est rattachée au **livreur**, pas à la course : le trajet
+  d'une course se reconstitue en croisant avec les bornes du journal. Index
+  unique sur `(livreur_id, horodatage)` — l'app mobile réémet un lot après une
+  coupure, et un doublon ferait un aller-retour fantôme sur le tracé.
+- **Le volume impose une rétention** : ~7 000 lignes par livreur et par jour.
+  `tracking.PurgerTracesPeriodiquement` supprime les positions de plus de
+  `TRACES_RETENTION_JOURS` (90 par défaut), par lots de 20 000, sous un verrou
+  consultatif **de session** — il doit couvrir tous les lots. Une durée ≤ 0 est
+  refusée (elle viderait la table) et retombe sur 90. Le journal et les preuves
+  ne sont pas purgés. Le rejeu d'un trajet de plus de 90 jours n'a donc plus de
+  points.
+
+## Reçu imprimable
+
+Un seul document, deux audiences : `GET /api/courses/:id/recu` (compagnie) et
+`GET /api/commandes/:id/recu` (partenaire). Il est **générique et volontairement
+pauvre** tant que le client n'a pas dit quels papiers il remplace.
+
+- **Pas de numéro à lui** : c'est celui de la course, `FY-1042`. Une seconde
+  numérotation obligerait à demander « lequel des deux ? » à chaque appel.
+- **Aucun montant**, comme partout ailleurs — `config_tarifaire` porte un
+  abonnement et une commission, pas un tarif par course. Sur un justificatif, un
+  chiffre inventé est pire qu'aucun.
+- **Le partenaire n'y lit jamais le nom du livreur.** Le retrait se fait dans
+  `chargerRecu`, à un seul endroit ; `recu_test.go` le verrouille dans les deux
+  sens — le reçu de la compagnie, lui, **doit** le nommer, sinon la garantie ne
+  prouverait rien.
+- `emis_le` est distinct de `cree_le` : il dit quand la copie a été tirée. Deux
+  impressions portent des instants différents, et c'est voulu.
+- Le titre suit l'avancement : « Bon de commande » avant la livraison, « Reçu de
+  livraison » après. C'est le seul endroit où le document varie.
+
+Côté impression, le CSS **rend tout le corps invisible puis seulement le
+document**, au lieu de masquer une liste d'éléments. Une liste d'exceptions se
+périme au premier bandeau ajouté au-dessus du reçu ; et côté dashboard le reçu
+vit dans un `<dialog>` ouvert en `showModal()`, donc dans le *top layer*, que
+masquer ses ancêtres emporterait avec eux. Le `display: none` qui suit sur la
+navigation retire en plus leur boîte : le reçu étant sorti du flux, ce qui y
+reste fixe la hauteur du document.
+
+Tests : 5 tests Go, `test-recu.mjs` (37, parcours complet contre l'API) et
+`test-recu-ui.mjs` (46) — ce dernier bascule Chrome en média « print », vérifie
+que **rien hors du reçu ne reste visible** sur l'arbre entier, et compte les
+pages du PDF produit.
+
+## Preuve de livraison
+
+`preuves_livraison` : une ligne par course, **immuable par la base** comme le
+journal. Nom du réceptionnaire, et une signature ou une photo — l'un des deux
+suffit.
+
+- **Découplée du passage à « livrée ».** La course se clôt d'abord ; la preuve
+  part ensuite et attend dans une file locale (`app-livreur/src/filePreuves.ts`)
+  si le réseau lâche. Conditionner la clôture à la montée d'une image
+  laisserait un livreur bloqué devant un portail.
+- **Tout y est facultatif.** Exiger la preuve ne la ferait pas apparaître : elle
+  créerait une incitation à la fabriquer. Un reçu sans preuve n'est pas une
+  anomalie, et le champ est **omis** plutôt que nul.
+- **Une seule, définitive.** Un second dépôt rend 409, et un `UPDATE` est refusé
+  par un trigger. Une pièce qu'on peut réécrire ne prouve rien. Le corollaire :
+  l'app recueille tout sur **un seul écran** et n'envoie qu'une fois.
+- `capture_le` (la porte) ≠ `created_at` (le serveur). Une date *future* est
+  ignorée — une horloge déréglée daterait la signature de demain sur le papier.
+- Image bornée à **512 Ko**, allowlist MIME (`png`/`jpeg`/`webp`), servie avec
+  `nosniff` et un type relu **en base** : le renvoyer depuis la requête
+  laisserait un appelant choisir sous quel type son contenu sera interprété.
+- Elle voyage **hors du reçu** (`GET …/preuve/media`) : jointe, elle serait
+  retéléchargée à chaque ouverture au lieu de passer par le cache. Le front la
+  charge en blob puis en URL d'objet — un `<img src>` ne porte pas d'en-tête
+  d'authentification.
+- Le **rôle** décide quel claim fait autorité dans le contrôle d'accès, jamais
+  la seule présence d'un identifiant : un jeton de partenaire porte aussi le
+  `compagnie_id` de sa compagnie, et s'y fier laissait n'importe quel partenaire
+  lire la preuve d'une entreprise concurrente servie par le même transporteur.
+  `TestPreuve_UnPartenaireVoisinNAtteintPasLImage` garde ce point.
+
+Côté livreur, la signature est un canevas piloté en **pointer events**, avec
+`touch-action: none` — sans quoi le geste est pris pour un défilement et rien ne
+s'écrit. Les photos sont redimensionnées à 1024 px / JPEG 0,7 avant l'envoi.
+
+**Piège de test** : un canevas vide exporte un PNG parfaitement valide. Comparer
+un format, ou même comparer les octets envoyés et reçus, ne dit donc rien.
+`test-remise-ui.mjs` **compte les pixels opaques** du PNG arrivé en base ; c'est
+la seule assertion qui tombe si le tracé ne s'écrit pas.
+
+## Lien de reçu partageable par WhatsApp
+
+`GET /r/:jeton` — une page HTML publique, sans authentification, générée par
+`POST /api/courses/:id/lien-partage` (compagnie) ou
+`POST /api/commandes/:id/lien-partage` (partenaire).
+
+- **Un seul lien actif par course**, réutilisé tant qu'il n'a pas expiré (90
+  jours) : `liens_partages_recu`. Le jeton n'est **pas haché**, à la
+  différence du jeton de renouvellement — sa portée est un reçu en lecture
+  seule, pas un compte entier, et il doit pouvoir être ressorti tel quel pour
+  qu'un second clic sur « Partager » redonne le même lien.
+- **La page est rendue en HTML côté serveur** (`html/template`, jamais de
+  concaténation) : c'est le seul document du produit consommé directement par
+  un navigateur plutôt que par une application React, et le seul dont le
+  contenu — adresses, noms — est du texte libre injecté dans du HTML servi à
+  un inconnu.
+- **La garantie de masquage s'applique sans condition de rôle** : la page
+  réutilise `chargerRecu(..., avecLivreur=false)`, comme le reçu du
+  partenaire, y compris quand c'est la compagnie qui a généré le lien.
+- **`wa.me/?text=...` sans numéro** : la plateforme ne connaît que
+  `telephone_hash`, jamais le numéro en clair du destinataire. C'est la
+  personne qui partage qui choisit le contact depuis son propre téléphone.
+- Jeton inconnu et jeton expiré rendent le **même** 404.
+
+Tests : 7 tests Go, `test-partage-ui.mjs` (14 — les deux applications,
+`window.open` espionné plutôt qu'une vraie navigation vers wa.me).
+**Mutation trouvée en vérifiant** : la génération côté compagnie n'avait pas de
+test sur le cloisonnement entre compagnies — n'importe laquelle pouvait générer
+le lien d'une course qui n'était pas la sienne. Comblé par
+`TestLienPartage_UneAutreCompagnieNePeutPasEnGenererUn`.
+
+## Rejeu du trajet sur la carte
+
+`GET /api/courses/:id/trajet` (compagnie) et `GET /api/commandes/:id/trajet`
+(partenaire), dans le panneau/écran du reçu — chargé au clic sur « Voir sur la
+carte », pas à l'ouverture.
+
+- **Reconstitution par croisement**, pas par une table dédiée :
+  `traces_positions` est rattachée au livreur, pas à la course (voir
+  « Traçabilité » plus haut). La fenêtre à extraire vient des bornes du
+  journal — `assignee` jusqu'à `livree`/`annulee`, ou jusqu'à `now()` si la
+  course est encore en cours. Une course n'a qu'un seul livreur, jamais
+  réassignée une fois `assignee` (`TransitionValide` ne l'autorise pas), donc
+  pas d'ambiguïté sur quel livreur filtrer.
+- **Aucune identité n'y circule** : un point GPS n'est jamais nommé. La même
+  fonction (`chargerTrajet`) sert donc les deux audiences sans variante
+  `avecLivreur`, contrairement au reçu.
+- **Volontairement absent de la page publique partagée** (5.6) : Leaflet et
+  ses tuiles coûteraient des données sur une page pensée pour rester légère
+  sur un réseau mobile quelconque ; le journal y porte déjà les horodatages en
+  texte, qui racontent la même histoire sans carte.
+- Le tracé est dessiné en **pointillés**, pas en ligne pleine : ce sont des
+  positions GPS espacées de plusieurs secondes, pas un relevé routier — une
+  ligne pleine suggérerait une précision qu'il n'a pas.
+
+Tests : 7 tests Go, `test-trajet-ui.mjs` (13 — dépôt de positions réel via
+`POST /api/livreurs/me/positions`, rendu Leaflet vérifié dans les deux apps).
+**Piège rencontré en écrivant le test** : des positions horodatées « il y a 8
+minutes » tombaient hors fenêtre, parce que l'assignation et la livraison, dans
+un script automatisé, se suivent en quelques secondes réelles — pas en minutes.
+Le correctif est dans le test, pas dans le produit : horodatage omis à chaque
+dépôt, laissé à `now()` côté serveur.
+
+## Tracking temps réel
+
 ## Tracking temps réel
 
 - Le livreur pousse sa position toutes les 3-5 s. **Deux canaux d'entrée** :
@@ -320,6 +488,26 @@ Navigation basse à 3 onglets sur les deux apps mobiles : Suivi/Commandes/Profil
 
 > La maquette montre un encart livreur avec nom, plaque et **bouton d'appel**, ainsi que des données (ETA, gains du jour, ponctualité) qui n'existent pas dans le produit. Ne pas les reprendre : le bouton d'appel **contredirait la garantie de masquage**, et le reste demanderait des données fictives. Le contact passe par la messagerie masquée.
 
+## Intégration continue
+
+`.github/workflows/ci.yml` — deux travaux, sur chaque pull request et sur `main`.
+
+| Travail | Ce qu'il fait |
+| --- | --- |
+| Backend | Postgres **PostGIS** + Redis en services, migrations, `gofmt`, `go vet`, `go test -race` |
+| Fronts | matrice des 5 projets : `npm ci`, `tsc -b --noEmit`, `npm run build` |
+
+Deux réglages sans lesquels la CI serait décorative :
+
+- **`FIYEN_TESTS_INTEGRATION=1`** : sans lui, les tests d'intégration
+  s'ignorent quand la base manque et tout passe au vert sans rien vérifier.
+- **`tsc -b`** et non `tsc --noEmit` : le `tsconfig.json` de ces projets Vite
+  déclare `"files": []` et délègue à des *project references*. Sans `-b`, `tsc`
+  ne compile **rien** et rend 0 quoi qu'il arrive.
+
+`-race` est nécessaire : notifications, évènements et purge publient en
+goroutine, et une course y est invisible autrement.
+
 ## Sécurité (non négociable)
 
 - TLS sur tous les échanges
@@ -370,6 +558,15 @@ lancée avec `JWT_DUREE_MINUTES=1`.
 - **L'app Expo n'a jamais tourné sur un appareil.** Le bundle Android se construit et le manifeste natif est correct (permissions + `LocationTaskService` en `foregroundServiceType="location"`), mais le suivi en arrière-plan — sa seule raison d'être — n'est pas vérifié. Il faut un *development build* (`npx expo run:android`) ; ça ne marche pas dans Expo Go. À faire en priorité avant de s'appuyer dessus.
 - Depuis un téléphone, `localhost` ne désigne pas la machine de dev : renseigner l'IP LAN dans `EXPO_PUBLIC_API_URL` et l'ajouter à `CORS_ORIGINS`.
 - Jetons de design dupliqués dans 4 projets (voir ci-dessus).
+- **Les tuiles CARTO gratuites affichent un filigrane « API KEY REQUIRED »** (`basemaps.cartocdn.com`, utilisé par `CarteFlotte`, `CarteSuivi` et `CarteTrajet` — les 3 cartes du produit). Remarqué en vérifiant 5.7, pas introduit par ce point : CARTO semble avoir resserré l'usage anonyme de son offre gratuite. Les cartes restent fonctionnelles (marqueurs, tracé, zoom), seul le fond de carte porte le filigrane. À résoudre en obtenant une clé CARTO (ou en changeant de fournisseur de tuiles) avant un usage réel.
+- **`dashboard/vite.config.ts` n'avait pas de port fixe**, contrairement aux trois autres apps (`app-livreur`, `app-client`, `app-partenaire`, toutes en `strictPort`). Un port 5173 déjà pris par un autre projet de la machine faisait glisser Vite sur le port suivant libre, en silence — parfois celui d'un projet sans rapport. Corrigé.
+- **La règle CSS `.icone` n'existe que dans `app-partenaire/`.** Les icônes du
+  projet sont des tracés sans attribut de peinture : sans règle, le navigateur
+  applique son défaut — aplat noir, taille intrinsèque (79 px mesurés). La
+  règle n'existait nulle part que sous `.nav-bas`, donc seule la navigation
+  était correcte. Corrigé dans `app-partenaire` et `app-livreur` ; `app-client`
+  et `dashboard` ont le même trou, non corrigé faute de l'avoir constaté à
+  l'écran sur chacun.
 - `react-router-dom` (dashboard) remonte des CVE liées au SSR/RSC — sans objet ici, SPA cliente pure.
 - **MCP 21st installé, mais compte en offre gratuite : 2 récupérations de code par jour** (`mcp__21st__get_usage`). Les recherches et les aperçus sont gratuits et illimités.
   - Les composants du catalogue sont en **shadcn/Tailwind**, que ce projet n'utilise pas (CSS + variables custom). Les installer imposerait Tailwind + shadcn : à ne pas faire. **S'en servir comme référence visuelle** — télécharger les `previewUrl` et les regarder — puis adapter au CSS maison.

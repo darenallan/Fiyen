@@ -1100,6 +1100,41 @@ button.secondaire:hover:not(:disabled) {
   box-shadow: none;
 }
 
+/* Bouton-lien : compact et sans fond, pour une action secondaire posée à
+   côté d'un libellé plutôt qu'en pleine largeur — le bouton de base fait
+   `width: 100%`, ce qui conviendrait mal ici. */
+button.lien {
+  width: auto;
+  min-height: 0;
+  padding: 4px 0;
+  background: none;
+  box-shadow: none;
+  color: var(--vert);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+button.lien::after { display: none; }
+
+button.lien:hover:not(:disabled) {
+  filter: none;
+  box-shadow: none;
+  color: var(--vert-2);
+}
+
+button.lien:disabled { opacity: 0.5; }
+
+.recu-trajet-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.recu-trajet-entete .surtitre { margin: 0; }
+
 select {
   font: inherit;
   font-family: var(--corps);
@@ -1254,6 +1289,15 @@ tbody tr:last-child td { border-bottom: none; }
 
 .bouton-recentrer::after { display: none; }
 
+.carte-trajet {
+  height: 320px;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  border: 1px solid var(--creme-2);
+  position: relative;
+  z-index: 0;
+}
+
 .muted-carte {
   position: absolute;
   inset: auto 14px 14px 14px;
@@ -1328,4 +1372,218 @@ tbody tr:last-child td { border-bottom: none; }
   margin: 12px 0;
   text-align: center;
   user-select: all;
+}
+
+
+/* ------------------------------------------------------------------
+   Reçu imprimable
+   ------------------------------------------------------------------
+   Les jetons sont ceux d'`app-client/src/index.css`, recopiés ici comme
+   partout ailleurs (quatre projets Vite indépendants). Toute évolution de
+   ce bloc doit être répercutée dans `app-partenaire/src/partenaire.css`. */
+
+.panneau-recu {
+  border: none;
+  border-radius: var(--r-md, 18px);
+  padding: 26px;
+  max-width: 720px;
+  width: calc(100% - 48px);
+  background: var(--creme, #f5efe1);
+  color: var(--tx-clair, #16332a);
+}
+
+.panneau-recu::backdrop {
+  background: rgba(14, 31, 25, 0.55);
+}
+
+.barre-recu {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.recu .surtitre {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--tx-clair-muet, #55605a);
+  margin: 0;
+}
+
+.recu .attenue {
+  color: var(--tx-clair-muet, #55605a);
+  font-size: 0.85rem;
+  margin: 2px 0 0;
+}
+
+.recu-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--vert, #16332a);
+}
+
+.recu-compagnie {
+  font-family: 'Baloo 2', system-ui, sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.recu-partenaire {
+  margin: 2px 0 0;
+  color: var(--tx-clair-muet, #55605a);
+  font-size: 0.9rem;
+}
+
+.recu-reference { text-align: right; }
+
+.recu-numero {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 2px 0 0;
+}
+
+.recu-trajet {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--creme-2, #eae0c6);
+}
+
+.recu-adresse { margin: 4px 0 0; font-weight: 600; }
+.recu-destinataire { margin: 6px 0 0; }
+
+.recu-bloc {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--creme-2, #eae0c6);
+}
+
+.recu-bloc p { margin: 0 0 6px; }
+
+.recu-etiquette {
+  display: inline-block;
+  min-width: 90px;
+  color: var(--tx-clair-muet, #55605a);
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.recu-journal {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.recu-journal td {
+  padding: 5px 0;
+  vertical-align: top;
+  border-bottom: 1px dotted var(--creme-2, #eae0c6);
+}
+
+.recu-journal tr:last-child td { border-bottom: none; }
+
+.recu-heure {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  color: var(--tx-clair-muet, #55605a);
+  white-space: nowrap;
+  padding-right: 14px;
+}
+
+.recu-auteur {
+  text-align: right;
+  color: var(--tx-clair-muet, #55605a);
+  font-size: 0.85rem;
+}
+
+.recu-pied { padding-top: 14px; }
+.recu-pied p { margin: 0; font-size: 0.8rem; }
+
+@media print {
+  /* `visibility` plutôt que `display: none` sur le reste de la page : le
+     reçu vit dans un <dialog> ouvert en `showModal()`, donc dans le *top
+     layer*. Masquer ses ancêtres le masquerait avec eux, alors que rendre
+     invisible tout le corps puis re-rendre visible le seul document marche
+     quelle que soit la couche. Le positionnement absolu évite ensuite la
+     page blanche laissée par ce qui n'est qu'invisible. */
+  body { visibility: hidden; background: #fff; }
+
+  .recu, .recu * { visibility: visible; }
+
+  .recu {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    background: #fff;
+    color: #000;
+    padding: 0;
+    margin: 0;
+    /* Un reçu tient sur une page ; le couper au milieu du déroulé rendrait
+       la seconde feuille inutilisable seule. */
+    page-break-inside: avoid;
+  }
+
+  .panneau-recu {
+    border: none;
+    padding: 0;
+    max-width: none;
+    width: 100%;
+    background: #fff;
+  }
+
+  .panneau-recu::backdrop { display: none; }
+  /* Invisible ne suffit pas : la boîte resterait dans le flux, et le reçu en
+     étant sorti, elle allongerait le document. */
+  .sans-impression { display: none !important; }
+
+  .recu-entete { border-bottom-color: #000; }
+  .recu-trajet, .recu-bloc { border-bottom-color: #999; }
+  .recu-heure, .recu-auteur, .recu-partenaire, .recu-etiquette { color: #444; }
+
+  @page { margin: 16mm; }
+}
+
+
+/* La preuve sur le reçu.
+   La signature est tracée en sombre sur fond transparent : un cadre clair la
+   rend lisible aussi bien à l'écran qu'imprimée sur du papier blanc. */
+.recu-preuve-media {
+  display: block;
+  max-width: 100%;
+  margin-top: 10px;
+  border: 1px solid var(--creme-2, #eae0c6);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.recu-preuve-media.signature {
+  /* Une signature large et basse : la borner en hauteur évite qu'un tracé sur
+     grand écran occupe la moitié de la feuille. */
+  max-height: 150px;
+  object-fit: contain;
+  padding: 4px;
+}
+
+.recu-preuve-media.photo {
+  max-height: 260px;
+  object-fit: contain;
+}
+
+@media print {
+  /* Le fond blanc du cadre n'est pas imprimé par défaut ; sans cette règle la
+     bordure flotterait autour d'une image sans support. */
+  .recu-preuve-media {
+    border-color: #999;
+    /* Une preuve coupée entre deux pages ne prouve plus rien. */
+    page-break-inside: avoid;
+  }
 }
