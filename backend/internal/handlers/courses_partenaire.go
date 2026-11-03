@@ -61,8 +61,13 @@ type CoursePartenaire struct {
 	LatitudeArrivee  *float64            `json:"latitude_arrivee,omitempty"`
 	LongitudeArrivee *float64            `json:"longitude_arrivee,omitempty"`
 	CreeParNom       *string             `json:"cree_par_nom,omitempty"`
-	CreatedAt        time.Time           `json:"created_at"`
-	UpdatedAt        time.Time           `json:"updated_at"`
+	// Prix figé à la commande d'après le barème de la compagnie. Absent quand
+	// aucun barème n'était publié ou qu'il fallait des épingles manquantes.
+	PrixEstime       *int      `json:"prix_estime,omitempty"`
+	Devise           *string   `json:"devise,omitempty"`
+	DistanceEstimeeM *int      `json:"distance_estimee_m,omitempty"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }
 
 type creerCoursePartenaireBody struct {
@@ -183,20 +188,30 @@ func (d *Deps) CreerCoursePartenaire(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "attribution du numéro échouée")
 	}
 
+	// Le prix est calculé **dans la transaction**, sur la version du barème
+	// lue ici même : celle que porte la commande est celle qui a servi.
+	bareme, err := baremeEnVigueur(ctx, tx, *claims.CompagnieID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "lecture du barème échouée")
+	}
+	est := estimer(bareme, body.LatitudeDepart, body.LongitudeDep, body.LatitudeArrivee, body.LongitudeArr)
+
 	var course CoursePartenaire
 	err = tx.QueryRow(ctx, `
 		INSERT INTO courses (
 			compagnie_id, destinataire_id, partenaire_id, cree_par, numero,
 			adresse_depart, repere_depart, point_depart,
 			adresse_arrivee, repere_arrivee, point_arrivee,
-			description_colis, instructions
+			description_colis, instructions,
+			prix_estime, distance_estimee_m, bareme_id
 		) VALUES (
 			$1, $2, $3, $4, $5,
 			$6, $7, CASE WHEN $8::float8 IS NULL THEN NULL
 			             ELSE ST_SetSRID(ST_MakePoint($9, $8), 4326)::geography END,
 			$10, $11, CASE WHEN $12::float8 IS NULL THEN NULL
 			              ELSE ST_SetSRID(ST_MakePoint($13, $12), 4326)::geography END,
-			$14, $15
+			$14, $15,
+			$16, $17, $18
 		)
 		RETURNING id, numero, statut, adresse_depart, repere_depart,
 		          adresse_arrivee, repere_arrivee, description_colis, instructions,
@@ -206,6 +221,7 @@ func (d *Deps) CreerCoursePartenaire(c *fiber.Ctx) error {
 		body.AdresseDepart, nilSiVide(body.RepereDepart), body.LatitudeDepart, body.LongitudeDep,
 		body.AdresseArrivee, nilSiVide(body.RepereArrivee), body.LatitudeArrivee, body.LongitudeArr,
 		nilSiVide(body.DescriptionColis), nilSiVide(body.Instructions),
+		est.Prix, est.distanceM, est.baremeID,
 	).Scan(&course.ID, &numero, &course.Statut, &course.AdresseDepart, &course.RepereDepart,
 		&course.AdresseArrivee, &course.RepereArrivee, &course.DescriptionColis,
 		&course.Instructions, &course.CreatedAt, &course.UpdatedAt)
@@ -225,6 +241,11 @@ func (d *Deps) CreerCoursePartenaire(c *fiber.Ctx) error {
 	course.LongitudeDepart = body.LongitudeDep
 	course.LatitudeArrivee = body.LatitudeArrivee
 	course.LongitudeArrivee = body.LongitudeArr
+	course.PrixEstime = est.Prix
+	course.DistanceEstimeeM = est.distanceM
+	if bareme != nil {
+		course.Devise = &bareme.Devise
+	}
 
 	return c.Status(fiber.StatusCreated).JSON(course)
 }
@@ -240,10 +261,12 @@ const requeteCoursesPartenaire = `
 	       ST_Y(co.point_depart::geometry), ST_X(co.point_depart::geometry),
 	       ST_Y(co.point_arrivee::geometry), ST_X(co.point_arrivee::geometry),
 	       u.nom,
+	       co.prix_estime, bl.devise, co.distance_estimee_m,
 	       co.created_at, co.updated_at
 	FROM courses co
 	JOIN destinataires cl ON cl.id = co.destinataire_id
 	LEFT JOIN utilisateurs u ON u.id = co.cree_par
+	LEFT JOIN baremes_livraison bl ON bl.id = co.bareme_id
 `
 
 func scannerCoursePartenaire(rows pgx.Rows) (CoursePartenaire, error) {
@@ -253,7 +276,8 @@ func scannerCoursePartenaire(rows pgx.Rows) (CoursePartenaire, error) {
 		&c.AdresseDepart, &c.RepereDepart, &c.AdresseArrivee, &c.RepereArrivee,
 		&c.DescriptionColis, &c.Instructions, &c.DestinataireNom,
 		&c.LatitudeDepart, &c.LongitudeDepart, &c.LatitudeArrivee, &c.LongitudeArrivee,
-		&c.CreeParNom, &c.CreatedAt, &c.UpdatedAt)
+		&c.CreeParNom, &c.PrixEstime, &c.Devise, &c.DistanceEstimeeM,
+		&c.CreatedAt, &c.UpdatedAt)
 	c.Numero = FormaterNumero(numero)
 	return c, err
 }
@@ -476,12 +500,14 @@ func (d *Deps) CommandesEntrantes(c *fiber.Ctx) error {
 		       ST_Y(co.point_depart::geometry), ST_X(co.point_depart::geometry),
 		       ST_Y(co.point_arrivee::geometry), ST_X(co.point_arrivee::geometry),
 		       u.nom,
+		       co.prix_estime, bl.devise, co.distance_estimee_m,
 		       co.created_at, co.updated_at,
 		       p.nom
 		FROM courses co
 		JOIN destinataires cl ON cl.id = co.destinataire_id
 		JOIN partenaires p ON p.id = co.partenaire_id
 		LEFT JOIN utilisateurs u ON u.id = co.cree_par
+		LEFT JOIN baremes_livraison bl ON bl.id = co.bareme_id
 		WHERE co.compagnie_id = $1
 		  AND co.partenaire_id IS NOT NULL
 		  AND co.statut = 'en_attente'
@@ -505,7 +531,8 @@ func (d *Deps) CommandesEntrantes(c *fiber.Ctx) error {
 			&e.AdresseDepart, &e.RepereDepart, &e.AdresseArrivee, &e.RepereArrivee,
 			&e.DescriptionColis, &e.Instructions, &e.DestinataireNom,
 			&e.LatitudeDepart, &e.LongitudeDepart, &e.LatitudeArrivee, &e.LongitudeArrivee,
-			&e.CreeParNom, &e.CreatedAt, &e.UpdatedAt, &e.PartenaireNom); err != nil {
+			&e.CreeParNom, &e.PrixEstime, &e.Devise, &e.DistanceEstimeeM,
+			&e.CreatedAt, &e.UpdatedAt, &e.PartenaireNom); err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, "lecture des commandes échouée")
 		}
 		e.Numero = FormaterNumero(numero)

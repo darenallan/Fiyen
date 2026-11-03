@@ -18,6 +18,9 @@ export function Layout() {
           <NavLink to="/" end className={({ isActive }) => (isActive ? 'actif' : '')}>
             Tableau de bord
           </NavLink>
+          <NavLink to="/statistiques" className={({ isActive }) => (isActive ? 'actif' : '')}>
+            Statistiques
+          </NavLink>
           <NavLink to="/livreurs" className={({ isActive }) => (isActive ? 'actif' : '')}>
             Flotte
           </NavLink>
@@ -37,6 +40,9 @@ export function Layout() {
           </NavLink>
           <NavLink to="/partenaires" className={({ isActive }) => (isActive ? 'actif' : '')}>
             Partenaires
+          </NavLink>
+          <NavLink to="/tarifs" className={({ isActive }) => (isActive ? 'actif' : '')}>
+            Tarifs
           </NavLink>
         </nav>
         <button className="secondaire" onClick={logout}>

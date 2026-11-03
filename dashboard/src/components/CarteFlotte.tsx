@@ -42,6 +42,10 @@ function libelleStatut(livreur: Livreur): string {
   return 'Hors service';
 }
 
+function echapper(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+}
+
 export function CarteFlotte({ livreurs }: { livreurs: Livreur[] }) {
   const conteneurRef = useRef<HTMLDivElement | null>(null);
   const carteRef = useRef<L.Map | null>(null);
@@ -73,9 +77,16 @@ export function CarteFlotte({ livreurs }: { livreurs: Livreur[] }) {
 
     // Tuiles claires et désaturées : elles laissent les marqueurs de statut
     // ressortir, là où les routes colorées d'OSM entreraient en concurrence.
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+      maxNativeZoom: 16,
       maxZoom: 19,
-      attribution: '&copy; OpenStreetMap, &copy; CARTO',
+      attribution: 'Fond de carte &copy; Esri, HERE, Garmin, &copy; contributeurs OpenStreetMap',
+    }).addTo(carte);
+    // Noms de quartiers et de voies, en couche séparée sur le fond gris.
+    // (CARTO light_all ne sert plus qu'un filigrane « API KEY REQUIRED ».)
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+      maxNativeZoom: 16,
+      maxZoom: 19,
     }).addTo(carte);
 
     carteRef.current = carte;
@@ -108,17 +119,25 @@ export function CarteFlotte({ livreurs }: { livreurs: Livreur[] }) {
 
     for (const livreur of localises) {
       const position: [number, number] = [livreur.latitude, livreur.longitude];
-      const infobulle = `<strong>${livreur.nom}</strong><br/>${libelleStatut(livreur)}`;
+      // Le nom est saisi librement par la compagnie : échappé avant d'entrer
+      // dans le HTML de la bulle.
+      const infobulle = `<strong>${echapper(livreur.nom)}</strong><br/>${echapper(libelleStatut(livreur))}`;
+      // Nom accessible du marqueur : sans lui, un lecteur d'écran annonce un
+      // « bouton » sans dire de qui il s'agit. Reposé après chaque setIcon,
+      // qui remplace l'élément.
+      const nomAccessible = `${livreur.nom}, ${libelleStatut(livreur)}`;
 
       const existant = marqueurs.get(livreur.id);
       if (existant) {
         existant.setLatLng(position);
         existant.setIcon(iconeLivreur(livreur));
         existant.setPopupContent(infobulle);
+        existant.getElement()?.setAttribute('aria-label', nomAccessible);
       } else {
         const marqueur = L.marker(position, { icon: iconeLivreur(livreur) })
           .addTo(carte)
           .bindPopup(infobulle);
+        marqueur.getElement()?.setAttribute('aria-label', nomAccessible);
         marqueurs.set(livreur.id, marqueur);
       }
     }

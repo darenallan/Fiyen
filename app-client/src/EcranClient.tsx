@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { api, ApiError, type Course, type StatutCourse } from './api';
-import { CarteSuivi } from './CarteSuivi';
 import { ChatMasque } from './ChatMasque';
+
+// Chargée à la demande : Leaflet pèse ~45 Ko compressés, inutiles tant
+// qu'aucune carte n'est affichée — sensible sur un réseau mobile lent.
+const CarteSuivi = lazy(() => import('./CarteSuivi').then((m) => ({ default: m.CarteSuivi })));
 import { Marque } from './Marque';
 import { NavBas, type Onglet } from './composants/NavBas';
 import { SqueletteCourse, SqueletteEtapes } from './composants/Squelette';
@@ -217,7 +220,7 @@ export function EcranClient({ onDeconnexion }: { onDeconnexion: () => void }) {
                     <>
                       <Route progression={progression(courseActive.statut)} />
                       <div className="heros-progres">
-                        <span style={{ width: `${progression(courseActive.statut)}%` }} />
+                        <span style={{ '--progression': progression(courseActive.statut) } as React.CSSProperties} />
                       </div>
                       <div className="heros-etape">
                         <span>
@@ -236,7 +239,11 @@ export function EcranClient({ onDeconnexion }: { onDeconnexion: () => void }) {
                   <Etapes course={courseActive} />
                 </div>
 
-                {suiviPossible && <CarteSuivi courseId={courseActive.id} />}
+                {suiviPossible && (
+                  <Suspense fallback={<p className="attenue">Chargement de la carte…</p>}>
+                    <CarteSuivi courseId={courseActive.id} />
+                  </Suspense>
+                )}
 
                 <ChatMasque courseId={courseActive.id} />
               </div>

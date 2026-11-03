@@ -31,13 +31,26 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_BACKGROUND_LOCATION",
         "FOREGROUND_SERVICE",
-        "FOREGROUND_SERVICE_LOCATION"
+        "FOREGROUND_SERVICE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
       ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
       [
         "expo-location",
         {
@@ -46,8 +59,21 @@
           "locationWhenInUsePermission": "Votre position permet à votre compagnie de suivre vos livraisons en cours.",
           "locationAlwaysAndWhenInUsePermission": "Votre position continue d'être transmise pendant une course, même écran verrouillé."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#16332A",
+          "defaultChannel": "courses"
+        }
       ]
     ],
-    "backgroundColor": "#F5EFE1"
+    "backgroundColor": "#F5EFE1",
+    "extra": {
+      "eas": {
+        "projectId": "0452041a-8456-4ae1-93b6-f3acf89b08bf"
+      }
+    },
+    "owner": "daren_allan"
   }
 }

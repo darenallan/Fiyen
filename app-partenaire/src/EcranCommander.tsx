@@ -1,6 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
-import { api, ApiError, type BrouillonCommande, type Commande, type Destinataire } from './api';
-import { ChoixPoint } from './composants/ChoixPoint';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import {
+  api,
+  ApiError,
+  formaterPrix,
+  type BrouillonCommande,
+  type Commande,
+  type Destinataire,
+  type Estimation,
+} from './api';
+// Chargée à la demande : Leaflet pèse ~45 Ko compressés, inutiles tant
+// qu'aucune carte n'est affichée — sensible sur un réseau mobile lent.
+const ChoixPoint = lazy(() => import('./composants/ChoixPoint').then((m) => ({ default: m.ChoixPoint })));
 import {
   IconeAlerte,
   IconeCarnet,
@@ -64,9 +74,11 @@ function lireBrouillon(): BrouillonCommande {
 
 export function EcranCommander({
   adresseParDefaut,
+  repereParDefaut = '',
   onEnvoyee,
 }: {
   adresseParDefaut: string;
+  repereParDefaut?: string;
   onEnvoyee: (commande: Commande) => void;
 }) {
   const [etape, setEtape] = useState<Etape>('depart');
@@ -75,8 +87,19 @@ export function EcranCommander({
     // Le point de retrait est presque toujours la boutique elle-même : le
     // pré-remplir évite de retaper la même adresse à chaque commande.
     if (!b.adresse_depart && adresseParDefaut) b.adresse_depart = adresseParDefaut;
+    if (!b.repere_depart && repereParDefaut) b.repere_depart = repereParDefaut;
     return b;
   });
+
+  // La fiche de l'entreprise peut arriver après l'ouverture de l'écran : on
+  // complète alors le retrait, sans jamais écraser ce qui a été saisi.
+  useEffect(() => {
+    setBrouillon((b) => ({
+      ...b,
+      adresse_depart: b.adresse_depart || adresseParDefaut,
+      repere_depart: b.repere_depart || repereParDefaut,
+    }));
+  }, [adresseParDefaut, repereParDefaut]);
 
   const [carnet, setCarnet] = useState<Destinataire[]>([]);
   const [carnetOuvert, setCarnetOuvert] = useState(false);
@@ -96,6 +119,23 @@ export function EcranCommander({
   useEffect(() => {
     api.carnet().then(setCarnet).catch(() => setCarnet([]));
   }, []);
+
+  // Estimation demandée en arrivant au récapitulatif, quand les épingles sont
+  // définitives. Une panne de lecture n'empêche pas de commander.
+  const [estimation, setEstimation] = useState<Estimation | null>(null);
+  useEffect(() => {
+    if (etape !== 'recap') return;
+    setEstimation(null);
+    let annule = false;
+    api
+      .estimation(brouillon)
+      .then((e) => !annule && setEstimation(e))
+      .catch(() => !annule && setEstimation({ disponible: false }));
+    return () => {
+      annule = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [etape]);
 
   const maj = <K extends keyof BrouillonCommande>(cle: K, valeur: BrouillonCommande[K]) =>
     setBrouillon((b) => ({ ...b, [cle]: valeur }));
@@ -210,14 +250,16 @@ export function EcranCommander({
             cherchera sur place.
           </p>
 
-          <ChoixPoint
-            latitude={brouillon.latitude_depart}
-            longitude={brouillon.longitude_depart}
-            onChange={(lat, lon) => {
-              maj('latitude_depart', lat);
-              maj('longitude_depart', lon);
-            }}
-          />
+          <Suspense fallback={<p className="attenue">Chargement de la carte…</p>}>
+            <ChoixPoint
+              latitude={brouillon.latitude_depart}
+              longitude={brouillon.longitude_depart}
+              onChange={(lat, lon) => {
+                maj('latitude_depart', lat);
+                maj('longitude_depart', lon);
+              }}
+            />
+          </Suspense>
         </section>
       )}
 
@@ -292,15 +334,17 @@ export function EcranCommander({
             />
           </label>
 
-          <ChoixPoint
-            latitude={brouillon.latitude_arrivee}
-            longitude={brouillon.longitude_arrivee}
-            couleur="rust"
-            onChange={(lat, lon) => {
-              maj('latitude_arrivee', lat);
-              maj('longitude_arrivee', lon);
-            }}
-          />
+          <Suspense fallback={<p className="attenue">Chargement de la carte…</p>}>
+            <ChoixPoint
+              latitude={brouillon.latitude_arrivee}
+              longitude={brouillon.longitude_arrivee}
+              couleur="rust"
+              onChange={(lat, lon) => {
+                maj('latitude_arrivee', lat);
+                maj('longitude_arrivee', lon);
+              }}
+            />
+          </Suspense>
         </section>
       )}
 
@@ -380,13 +424,31 @@ export function EcranCommander({
             </div>
           )}
 
-          {/* Pas de prix affiché : le barème en base porte l'abonnement et la
-              commission de la compagnie, pas un tarif par course. En inventer
-              un donnerait un chiffre faux au partenaire. */}
-          <p className="aide">
-            Le tarif est celui convenu avec votre compagnie de livraison. Il
-            n’est pas calculé ici.
-          </p>
+          {/* Le prix vient du barème publié par la compagnie, calculé par le
+              serveur. Sans barème, ou sans les épingles qu'il demande, on dit
+              pourquoi plutôt que d'afficher un chiffre inventé. */}
+          <div className="recap-prix" aria-live="polite">
+            {estimation === null ? (
+              <p className="attenue">Calcul du prix…</p>
+            ) : estimation.disponible && estimation.prix !== undefined ? (
+              <>
+                <p className="surtitre">Prix de la course</p>
+                <p className="recap-prix-montant">{formaterPrix(estimation.prix, estimation.devise)}</p>
+                <p className="attenue">
+                  D’après le barème de votre compagnie
+                  {estimation.distance_km !== undefined &&
+                    ` · environ ${estimation.distance_km.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} km`}
+                  . Ce prix est enregistré avec la commande.
+                </p>
+              </>
+            ) : (
+              <p className="aide">
+                {estimation.raison
+                  ? estimation.raison.charAt(0).toUpperCase() + estimation.raison.slice(1) + '.'
+                  : 'Le tarif est celui convenu avec votre compagnie de livraison.'}
+              </p>
+            )}
+          </div>
         </section>
       )}
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, wsUrl, ApiError, assurerJetonFrais } from './client';
+import { MODE_DEMO, abonnerPositions } from './demo';
 import type { Livreur } from './types';
 
 /**
@@ -22,7 +23,7 @@ const DELAI_RECONNEXION_MAX_MS = 20000;
  * les changements de statut (prise de service, assignation) ni les arrivées de
  * nouveaux livreurs : ce sondage lent les rattrape.
  */
-const INTERVALLE_RAFRAICHISSEMENT_MS = 15000;
+const INTERVALLE_RAFRAICHISSEMENT_MS = MODE_DEMO ? 5000 : 15000;
 
 export interface EtatFlotte {
   livreurs: Livreur[];
@@ -56,13 +57,40 @@ export function useFlotteLive(): EtatFlotte & { rafraichir: () => Promise<void> 
     }
   }
 
+  function appliquerPosition(msg: MessagePosition) {
+    setLivreurs((precedents) =>
+      precedents.map((l) =>
+        l.id === msg.livreur_id
+          ? {
+              ...l,
+              latitude: msg.latitude,
+              longitude: msg.longitude,
+              position_updated_at: msg.horodatage,
+              // Une position qui arrive prouve la présence, sans attendre
+              // le prochain sondage REST.
+              en_ligne: true,
+            }
+          : l,
+      ),
+    );
+  }
+
   useEffect(() => {
     montéRef.current = true;
     rafraichir();
     const timer = window.setInterval(rafraichir, INTERVALLE_RAFRAICHISSEMENT_MS);
+    let desabonnerDemo: (() => void) | null = null;
 
     async function connecter() {
       if (!montéRef.current) return;
+
+      // Démo : les positions sont simulées dans la page, sans WebSocket.
+      if (MODE_DEMO) {
+        desabonnerDemo = abonnerPositions(appliquerPosition);
+        setConnecte(true);
+        return;
+      }
+
       // Le jeton part dans l'URL du handshake et ne peut pas être rejoué :
       // il doit être frais *avant* l'ouverture, pas rattrapé après.
       await assurerJetonFrais();
@@ -89,21 +117,7 @@ export function useFlotteLive(): EtatFlotte & { rafraichir: () => Promise<void> 
         } catch {
           return;
         }
-        setLivreurs((precedents) =>
-          precedents.map((l) =>
-            l.id === msg.livreur_id
-              ? {
-                  ...l,
-                  latitude: msg.latitude,
-                  longitude: msg.longitude,
-                  position_updated_at: msg.horodatage,
-                  // Une position qui arrive prouve la présence, sans attendre
-                  // le prochain sondage REST.
-                  en_ligne: true,
-                }
-              : l,
-          ),
-        );
+        appliquerPosition(msg);
       };
 
       ws.onclose = () => {
@@ -129,6 +143,7 @@ export function useFlotteLive(): EtatFlotte & { rafraichir: () => Promise<void> 
     return () => {
       montéRef.current = false;
       clearInterval(timer);
+      desabonnerDemo?.();
       if (timerReconnexionRef.current !== null) clearTimeout(timerReconnexionRef.current);
       if (wsRef.current) {
         wsRef.current.onclose = null;

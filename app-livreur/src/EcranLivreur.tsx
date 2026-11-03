@@ -32,6 +32,18 @@ const ETAPE_SUIVANTE: Partial<Record<StatutCourse, { statut: StatutCourse; libel
   en_route: { statut: 'livree', libelle: 'Colis livré' },
 };
 
+/**
+ * Ouvre l'application de cartes du téléphone sur l'adresse de l'étape.
+ *
+ * Par l'adresse en texte et non par un point GPS : le livreur ne reçoit pas
+ * les coordonnées, et l'épingle reste facultative à la commande. Le pays est
+ * ajouté pour que la recherche ne parte pas sur une homonyme à l'étranger.
+ */
+function ouvrirItineraire(adresse: string) {
+  const destination = encodeURIComponent(`${adresse}, Burkina Faso`);
+  window.open(`https://www.google.com/maps/dir/?api=1&destination=${destination}`, '_blank', 'noopener');
+}
+
 const ETAT_TRACKING_INITIAL: EtatTracking = {
   actif: false,
   connecte: false,
@@ -317,6 +329,17 @@ export function EcranLivreur({ onDeconnexion }: { onDeconnexion: () => void }) {
                     disabled={actionEnCours}
                   >
                     {suivante.libelle}
+                  </button>
+                )}
+                {suivante && (
+                  <button
+                    className="contour"
+                    onClick={() => ouvrirItineraire(
+                      course.statut === 'assignee' ? course.adresse_depart : course.adresse_arrivee,
+                    )}
+                    style={{ marginTop: 8 }}
+                  >
+                    {course.statut === 'assignee' ? 'Itinéraire vers le retrait (A)' : 'Itinéraire vers la livraison (B)'}
                   </button>
                 )}
                 <button

@@ -1,3 +1,5 @@
+import { MODE_DEMO, repondreDemo, ErreurDemo, csvDemo } from './demo';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8090';
 
 const CLE_TOKEN = 'fiyen_token';
@@ -74,6 +76,7 @@ let renouvellementEnCours: Promise<boolean> | null = null;
 
 async function renouveler(): Promise<boolean> {
   if (!refreshToken) return false;
+  if (MODE_DEMO) return true; // le jeton de démo dure un an
   if (renouvellementEnCours) return renouvellementEnCours;
 
   renouvellementEnCours = (async () => {
@@ -117,7 +120,7 @@ export async function assurerJetonFrais(): Promise<boolean> {
 /** Révoque la session côté serveur. Silencieuse en cas d'échec : l'important
  *  est d'effacer le jeton localement, ce que fait l'appelant. */
 export async function deconnexionServeur(): Promise<void> {
-  if (!refreshToken) return;
+  if (!refreshToken || MODE_DEMO) return;
   try {
     await fetch(`${API_BASE_URL}/api/auth/deconnexion`, {
       method: 'POST',
@@ -130,6 +133,15 @@ export async function deconnexionServeur(): Promise<void> {
 }
 
 async function requete<T>(path: string, options: RequestInit = {}, rejeu = false): Promise<T> {
+  if (MODE_DEMO) {
+    try {
+      return await repondreDemo<T>(path, options);
+    } catch (err) {
+      if (err instanceof ErreurDemo) throw new ApiError(err.message, err.status);
+      throw err;
+    }
+  }
+
   const headers = new Headers(options.headers);
   headers.set('Content-Type', 'application/json');
   if (token) {
@@ -186,12 +198,41 @@ export const api = {
  * Rend `null` quand il n'y a pas d'image : une preuve peut n'être qu'un nom.
  */
 export async function urlMediaPreuve(courseId: string): Promise<string | null> {
+  if (MODE_DEMO) return null; // le jeu de démo n'a pas de photo de remise
   await assurerJetonFrais();
   const rep = await fetch(`${API_BASE_URL}/api/courses/${courseId}/preuve/media`, {
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
   if (!rep.ok) return null;
   return URL.createObjectURL(await rep.blob());
+}
+
+/**
+ * Télécharge un fichier d'un endpoint authentifié. Un simple lien `<a href>`
+ * ne porterait pas l'en-tête `Authorization` : on passe par un blob.
+ */
+export async function telechargerFichier(path: string, nomParDefaut: string): Promise<void> {
+  let nom = nomParDefaut;
+  let blob: Blob;
+  if (MODE_DEMO) {
+    blob = new Blob([csvDemo(path)], { type: 'text/csv;charset=utf-8' });
+  } else {
+    await assurerJetonFrais();
+    const rep = await fetch(`${API_BASE_URL}${path}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+    if (!rep.ok) throw new ApiError('Téléchargement impossible', rep.status);
+    nom = /filename="([^"]+)"/.exec(rep.headers.get('Content-Disposition') ?? '')?.[1] ?? nomParDefaut;
+    blob = await rep.blob();
+  }
+  const url = URL.createObjectURL(blob);
+  const lien = document.createElement('a');
+  lien.href = url;
+  lien.download = nom;
+  document.body.appendChild(lien);
+  lien.click();
+  lien.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export function wsUrl(path: string): string {

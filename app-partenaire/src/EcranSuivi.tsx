@@ -5,6 +5,7 @@ import {
   api,
   ApiError,
   assurerJetonFrais,
+  formaterPrix,
   urlWebSocketCourse,
   type Commande,
   type Position,
@@ -100,9 +101,16 @@ export function EcranSuivi({
       zoomControl: false,
       attributionControl: true,
     });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+      maxNativeZoom: 16,
       maxZoom: 19,
-      attribution: '&copy; OpenStreetMap, &copy; CARTO',
+      attribution: 'Fond de carte &copy; Esri, HERE, Garmin, &copy; contributeurs OpenStreetMap',
+    }).addTo(carte);
+    // Noms de quartiers et de voies, en couche séparée sur le fond gris.
+    // (CARTO light_all ne sert plus qu'un filigrane « API KEY REQUIRED ».)
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+      maxNativeZoom: 16,
+      maxZoom: 19,
     }).addTo(carte);
     carteRef.current = carte;
 
@@ -368,6 +376,12 @@ export function EcranSuivi({
             <>
               <dt>Consigne</dt>
               <dd>{commande.instructions}</dd>
+            </>
+          )}
+          {commande.prix_estime !== undefined && (
+            <>
+              <dt>Prix</dt>
+              <dd>{formaterPrix(commande.prix_estime, commande.devise)} · barème au moment de la commande</dd>
             </>
           )}
           {commande.cree_par_nom && (

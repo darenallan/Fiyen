@@ -15,4 +15,21 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
+  // Build de démonstration (`npm run build:demo`) : tout doit tenir dans un
+  // seul fichier HTML ouvert en local, sans serveur. Chemins relatifs, polices
+  // et images intégrées, un seul paquet JS que `scripts/build-demo.mjs` insère
+  // dans la page.
+  ...(process.env.VITE_DEMO === '1' && {
+    base: './',
+    build: {
+      outDir: 'dist-demo',
+      assetsInlineLimit: 100_000_000,
+      cssCodeSplit: false,
+      modulePreload: false,
+      chunkSizeWarningLimit: 5000,
+      // Les cartes sont chargées à la demande (import()) : en file:// un second
+      // fichier ne se charge pas, on force donc un paquet unique.
+      rolldownOptions: { output: { inlineDynamicImports: true } },
+    },
+  }),
 })

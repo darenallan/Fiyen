@@ -10,6 +10,7 @@ import {
   type SessionMasquage,
 } from '../api';
 import { couleurs, styles } from '../theme';
+import { MODE_DEMO, chatDemo } from '../demo';
 
 const DELAI_RECONNEXION_MIN_MS = 1000;
 const DELAI_RECONNEXION_MAX_MS = 15000;
@@ -28,6 +29,7 @@ export function ChatMasque({ courseId, onFermer }: { courseId: string; onFermer:
   const [erreur, setErreur] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
+  const desabonnerDemoRef = useRef<(() => void) | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const delaiRef = useRef(DELAI_RECONNEXION_MIN_MS);
   const monteRef = useRef(true);
@@ -47,6 +49,17 @@ export function ChatMasque({ courseId, onFermer }: { courseId: string; onFermer:
 
     async function connecter(sessionId: string) {
       if (!monteRef.current) return;
+
+      // Démo : le « client » est simulé dans le téléphone, sans WebSocket.
+      if (MODE_DEMO) {
+        desabonnerDemoRef.current = chatDemo.abonner(sessionId, (msg) => {
+          if (!monteRef.current) return;
+          setMessages((prec) => (prec.some((m) => m.id === msg.id) ? prec : [...prec, msg]));
+        });
+        setConnecte(true);
+        return;
+      }
+
       const token = await chargerToken();
       if (!token) return;
 
@@ -119,6 +132,8 @@ export function ChatMasque({ courseId, onFermer }: { courseId: string; onFermer:
 
     return () => {
       monteRef.current = false;
+      desabonnerDemoRef.current?.();
+      desabonnerDemoRef.current = null;
       if (timerRef.current !== null) clearTimeout(timerRef.current);
       if (wsRef.current) {
         wsRef.current.onclose = null;
@@ -130,6 +145,12 @@ export function ChatMasque({ courseId, onFermer }: { courseId: string; onFermer:
 
   function envoyer() {
     const contenu = brouillon.trim();
+    if (MODE_DEMO) {
+      if (!contenu || !session) return;
+      chatDemo.envoyer(session.session_id, contenu);
+      setBrouillon('');
+      return;
+    }
     if (!contenu || wsRef.current?.readyState !== WebSocket.OPEN) return;
     wsRef.current.send(JSON.stringify({ type: 'message', contenu }));
     setBrouillon('');

@@ -285,7 +285,13 @@ p {
   border-radius: var(--r-pill);
   background: var(--or);
   box-shadow: 0 0 12px 1px var(--or-halo);
-  transition: width 900ms var(--courbe);
+  /* Animée par transform et non par width : width relance la mise en page à
+     chaque image, transform reste sur le compositeur. La barre garde toute la
+     largeur et glisse ; le conteneur (overflow: hidden) masque le reste, et
+     les bouts arrondis ne sont pas déformés comme avec scaleX. */
+  width: 100%;
+  transform: translateX(calc(var(--progression, 0) * 1% - 100%));
+  transition: transform 900ms var(--courbe);
 }
 
 .heros-etape {
@@ -1125,7 +1131,9 @@ button.discret {
 
 /* Fin de service : action destructive, distincte de l'action principale. */
 button.danger {
-  background: var(--rust);
+  /* Rust assombri : la crème sur le rust de la charte (#D9581F) ne donne que
+     3,4:1, sous le seuil AA pour un libellé de bouton. #B5461A tient 4,7:1. */
+  background: #b5461a;
   color: var(--creme);
   box-shadow: 0 0 18px 2px rgba(217, 88, 31, 0.3);
 }

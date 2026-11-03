@@ -5,9 +5,12 @@ import { api, ApiError, type Course, type Livreur, type StatutCourse } from '../
 import { arreterSuivi, demarrerSuivi, suiviActif, tailleFile, viderFile } from '../tracking';
 import { couleurs, couleurStatut, styles } from '../theme';
 import { ChatMasque } from './ChatMasque';
+import { MODE_DEMO } from '../demo';
 
-/** Rafraîchissement lent : interroger l'API plus souvent coûterait de la donnée. */
-const INTERVALLE_RAFRAICHISSEMENT_MS = 20000;
+/** Rafraîchissement lent : interroger l'API plus souvent coûterait de la donnée.
+ *  En démo, rien ne passe par le réseau : on rafraîchit vite pour que la
+ *  course « assignée par la compagnie » apparaisse sans attendre. */
+const INTERVALLE_RAFRAICHISSEMENT_MS = MODE_DEMO ? 4000 : 20000;
 
 const LIBELLES_COURSE: Record<StatutCourse, string> = {
   en_attente: 'En attente',

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import {
+  api,
   assurerJetonFrais,
   deconnexionServeur,
   decodeRole,
@@ -12,7 +13,9 @@ import {
 import { Login } from './Login';
 import { EcranCommandes } from './EcranCommandes';
 import { EcranCommander } from './EcranCommander';
-import { EcranSuivi } from './EcranSuivi';
+// Le suivi embarque Leaflet : chargé à la première ouverture d'une commande,
+// pas au démarrage de l'application.
+const EcranSuivi = lazy(() => import('./EcranSuivi').then((m) => ({ default: m.EcranSuivi })));
 import { EcranRecu } from './EcranRecu';
 import { EcranProfil } from './EcranProfil';
 import { NavBas, type Onglet } from './composants/NavBas';
@@ -136,6 +139,14 @@ function EspacePartenaire({
 }) {
   const { annonces, ecarter } = useEvenements(onEvenement);
 
+  // Fiche de l'entreprise : sert à pré-remplir le point de retrait, qui est
+  // presque toujours la boutique elle-même. Une panne de lecture ne bloque
+  // rien, le champ reste simplement vide.
+  const [fiche, setFiche] = useState<{ nom: string; repere?: string } | null>(null);
+  useEffect(() => {
+    api.monPartenaire().then(setFiche).catch(() => setFiche(null));
+  }, []);
+
   return (
     <>
       {onglet === 'commandes' && vue.nom === 'liste' && (
@@ -147,16 +158,22 @@ function EspacePartenaire({
       )}
 
       {onglet === 'commandes' && vue.nom === 'commander' && (
-        <EcranCommander adresseParDefaut="" onEnvoyee={onEnvoyee} />
+        <EcranCommander
+          adresseParDefaut={fiche?.nom ?? ''}
+          repereParDefaut={fiche?.repere ?? ''}
+          onEnvoyee={onEnvoyee}
+        />
       )}
 
       {onglet === 'commandes' && vue.nom === 'suivi' && (
-        <EcranSuivi
-          version={version}
-          commandeID={vue.id}
-          onRetour={() => setVue({ nom: 'liste' })}
-          onRecu={() => setVue({ nom: 'recu', id: vue.id })}
-        />
+        <Suspense fallback={<p className="attenue" style={{ padding: 24 }}>Chargement du suivi…</p>}>
+          <EcranSuivi
+            version={version}
+            commandeID={vue.id}
+            onRetour={() => setVue({ nom: 'liste' })}
+            onRecu={() => setVue({ nom: 'recu', id: vue.id })}
+          />
+        </Suspense>
       )}
 
       {onglet === 'commandes' && vue.nom === 'recu' && (

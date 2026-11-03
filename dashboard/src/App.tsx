@@ -8,6 +8,8 @@ import { Livreurs } from './pages/Livreurs';
 import { Courses } from './pages/Courses';
 import { Partenaires } from './pages/Partenaires';
 import { CommandesEntrantes } from './pages/CommandesEntrantes';
+import { Bareme } from './pages/Bareme';
+import { Statistiques } from './pages/Statistiques';
 import { CommandesEntrantesProvider } from './api/CommandesEntrantesContext';
 
 function App() {
@@ -33,6 +35,8 @@ function App() {
         <Route path="courses" element={<Courses />} />
         <Route path="partenaires" element={<Partenaires />} />
         <Route path="entrantes" element={<CommandesEntrantes />} />
+        <Route path="tarifs" element={<Bareme />} />
+        <Route path="statistiques" element={<Statistiques />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

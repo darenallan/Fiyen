@@ -1,13 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { urlApi, urlWs } from './serveur';
+import { MODE_DEMO, repondreDemo, ErreurDemo } from './demo';
+
 /**
- * `localhost` ne désigne pas la machine de développement depuis un téléphone :
- * en test sur appareil réel, renseigner l'IP de la machine sur le réseau local
- * via EXPO_PUBLIC_API_URL (voir README).
+ * L'adresse du serveur n'est plus une constante : elle vient du profil de
+ * build (EXPO_PUBLIC_API_URL) et peut être changée depuis l'écran de
+ * connexion — voir `serveur.ts`. `localhost` ne désigne pas le PC depuis un
+ * téléphone : en test, c'est l'IP du PC sur le Wi-Fi.
  */
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8090';
-export const WS_BASE_URL =
-  process.env.EXPO_PUBLIC_WS_URL ?? API_BASE_URL.replace(/^http/, 'ws');
 
 const CLE_TOKEN = 'fiyen_livreur_token';
 const CLE_REFRESH = 'fiyen_livreur_refresh';
@@ -148,11 +149,12 @@ async function renouveler(): Promise<boolean> {
   // relancée dans un contexte où le cache mémoire est vide.
   const refresh = refreshCache ?? (await AsyncStorage.getItem(CLE_REFRESH));
   if (!refresh) return false;
+  if (MODE_DEMO) return true; // le jeton de démo dure un an
   if (renouvellementEnCours) return renouvellementEnCours;
 
   renouvellementEnCours = (async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+      const res = await fetch(`${urlApi()}/api/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: refresh }),
@@ -200,9 +202,9 @@ export async function assurerJetonFrais(): Promise<boolean> {
  *  est d'effacer le jeton localement, ce que fait l'appelant. */
 export async function deconnexionServeur(): Promise<void> {
   const refresh = refreshCache ?? (await AsyncStorage.getItem(CLE_REFRESH));
-  if (!refresh) return;
+  if (!refresh || MODE_DEMO) return;
   try {
-    await fetch(`${API_BASE_URL}/api/auth/deconnexion`, {
+    await fetch(`${urlApi()}/api/auth/deconnexion`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh_token: refresh }),
@@ -213,6 +215,15 @@ export async function deconnexionServeur(): Promise<void> {
 }
 
 async function requete<T>(path: string, options: RequestInit = {}, rejeu = false): Promise<T> {
+  if (MODE_DEMO) {
+    try {
+      return await repondreDemo<T>(path, options);
+    } catch (err) {
+      if (err instanceof ErreurDemo) throw new ApiError(err.message, err.status);
+      throw err;
+    }
+  }
+
   const token = tokenCache ?? (await chargerToken());
 
   const headers: Record<string, string> = {
@@ -221,7 +232,7 @@ async function requete<T>(path: string, options: RequestInit = {}, rejeu = false
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  const res = await fetch(`${urlApi()}${path}`, { ...options, headers });
 
   if (!res.ok) {
     // Un 401 sur un jeton expiré se rattrape : on renouvelle et on rejoue une
@@ -254,6 +265,18 @@ export const api = {
 
   monProfil: () => requete<Livreur>('/api/livreurs/me'),
 
+  enregistrerJetonPush: (jeton: string, plateforme: string) =>
+    requete<void>('/api/notifications/jeton', {
+      method: 'POST',
+      body: JSON.stringify({ jeton, plateforme }),
+    }),
+
+  oublierJetonPush: (jeton: string) =>
+    requete<void>('/api/notifications/jeton', {
+      method: 'DELETE',
+      body: JSON.stringify({ jeton }),
+    }),
+
   changerStatut: (statut: 'dispo' | 'offline') =>
     requete<{ statut: StatutLivreur }>('/api/livreurs/me/statut', {
       method: 'PATCH',
@@ -276,7 +299,7 @@ export const api = {
 };
 
 export function urlWebSocketMasquage(sessionId: string, token: string): string {
-  return `${WS_BASE_URL}/ws/masquage/${sessionId}?token=${encodeURIComponent(token)}`;
+  return `${urlWs()}/ws/masquage/${sessionId}?token=${encodeURIComponent(token)}`;
 }
 
 export function decodeRole(jwt: string): string | null {

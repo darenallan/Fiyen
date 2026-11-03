@@ -2,7 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 
-import { API_BASE_URL, chargerToken, assurerJetonFrais, renouvelerSession } from './api';
+import { chargerToken, assurerJetonFrais, renouvelerSession } from './api';
+import { chargerServeur, urlApi } from './serveur';
+import { MODE_DEMO } from './demo';
 
 /**
  * Nom de la tâche de localisation. La tâche est enregistrée au chargement du
@@ -111,6 +113,12 @@ export async function viderFile(forcer = false): Promise<void> {
   const file = await lireFile();
   if (file.length === 0) return;
 
+  // Démo : pas de serveur, les positions restent dans le téléphone et sont oubliées.
+  if (MODE_DEMO) {
+    await ecrireFile([]);
+    return;
+  }
+
   const dernierEnvoi = Number((await AsyncStorage.getItem(CLE_DERNIER_ENVOI)) ?? 0);
   const attenteEcoulee = Date.now() - dernierEnvoi >= INTERVALLE_ENVOI_MS;
   if (!forcer && file.length < TAILLE_LOT && !attenteEcoulee) return;
@@ -118,13 +126,16 @@ export async function viderFile(forcer = false): Promise<void> {
   // Renouvellement avant l'envoi : la tâche tourne en arrière-plan, sans
   // interface pour signaler un jeton mort. Un échec ici n'est pas bloquant —
   // le serveur tranchera, et un 401 déclenchera la tentative de rattrapage.
+  // La tâche d'arrière-plan peut démarrer sans que l'écran ait chargé le
+  // réglage du serveur : elle le lit elle-même.
+  await chargerServeur();
   await assurerJetonFrais();
 
   const token = await chargerToken();
   if (!token) return;
 
   const envoyer = (jeton: string) =>
-    fetch(`${API_BASE_URL}/api/livreurs/me/positions`, {
+    fetch(`${urlApi()}/api/livreurs/me/positions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton}` },
       body: JSON.stringify({ positions: file }),

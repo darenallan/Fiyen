@@ -288,7 +288,13 @@ p {
   border-radius: var(--r-pill);
   background: var(--or);
   box-shadow: 0 0 12px 1px var(--or-halo);
-  transition: width 900ms var(--courbe);
+  /* Animée par transform et non par width : width relance la mise en page à
+     chaque image, transform reste sur le compositeur. La barre garde toute la
+     largeur et glisse ; le conteneur (overflow: hidden) masque le reste, et
+     les bouts arrondis ne sont pas déformés comme avec scaleX. */
+  width: 100%;
+  transform: translateX(calc(var(--progression, 0) * 1% - 100%));
+  transition: transform 900ms var(--courbe);
 }
 
 .heros-etape {
@@ -1586,4 +1592,133 @@ tbody tr:last-child td { border-bottom: none; }
     /* Une preuve coupée entre deux pages ne prouve plus rien. */
     page-break-inside: avoid;
   }
+}
+
+/* ------------------------------ Barème (Tarifs) ------------------------------ */
+
+.choix-mode {
+  border: 0;
+  padding: 0;
+  margin: 0 0 var(--e-4);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--e-3);
+}
+
+.choix-mode-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-1);
+  padding: var(--e-4);
+  border: 1.5px solid var(--creme-2);
+  border-radius: var(--r-sm);
+  background: #fffdf7;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--corps);
+  font-size: 14px;
+  color: var(--tx-clair-muet);
+  margin: 0;
+  transition: border-color var(--duree-courte) var(--courbe), box-shadow var(--duree-courte) var(--courbe);
+}
+
+.choix-mode-option strong {
+  font-family: var(--titre, inherit);
+  font-size: 16px;
+  color: var(--tx-clair);
+}
+
+/* Le bouton radio reste dans le flux d'accessibilité, caché à l'œil : la
+   carte entière fait office de cible. */
+.choix-mode-option input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.choix-mode-option.actif {
+  border-color: var(--or);
+  box-shadow: 0 0 0 4px var(--or-halo-doux);
+}
+
+/* L'état actif ne repose pas que sur la couleur : un trait marque le choix. */
+.choix-mode-option.actif strong::before {
+  content: '✓ ';
+  color: var(--or-texte-clair);
+}
+
+.choix-mode-option:has(input:focus-visible) {
+  outline: 2px solid var(--tx-clair);
+  outline-offset: 2px;
+}
+
+.ligne-champs {
+  display: flex;
+  gap: var(--e-3);
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: var(--e-3);
+}
+
+.ligne-champs label {
+  flex: 1 1 180px;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+}
+
+.succes {
+  color: var(--succes-texte);
+  font-weight: 600;
+}
+
+/* ------------------------------ Statistiques ------------------------------ */
+
+.grille-indicateurs {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.indicateur {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-1);
+  text-align: left;
+}
+
+/* Le sens de l'écart est dit par la flèche et par le mot lu à voix haute,
+   la teinte ne fait que doubler l'information. */
+.ecart {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+}
+.ecart.bon { color: var(--succes-texte); }
+.ecart.mauvais { color: #a53f13; }
+.ecart.neutre { color: var(--tx-clair-muet); font-weight: 400; }
+.ecart-detail { font-weight: 400; color: var(--tx-clair-muet); }
+
+.definition summary {
+  cursor: pointer;
+  font-size: 12px;
+  /* Sur le fond des tuiles (crème foncé), la moutarde « texte » ne tient que
+     4,2:1 : vert texte souligné à la place. */
+  color: var(--tx-clair);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  margin-top: var(--e-2);
+}
+.definition p {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--tx-clair-muet);
+  margin: var(--e-2) 0 0;
+}
+
+/* Le lien « Leaflet » garde sinon le bleu de la bibliothèque (3,6:1). */
+.leaflet-container .leaflet-control-attribution a {
+  color: var(--tx-clair);
 }

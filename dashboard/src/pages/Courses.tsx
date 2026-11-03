@@ -39,7 +39,7 @@ export function Courses() {
       setCourses(data ?? []);
       setErreur(null);
     } catch (err) {
-      setErreur(err instanceof ApiError ? err.message : 'Erreur inconnue');
+      setErreur(err instanceof ApiError ? err.message : 'Serveur injoignable. Vérifiez la connexion internet, puis rechargez la page.');
     } finally {
       setChargement(false);
     }
@@ -183,7 +183,7 @@ export function Courses() {
           <p className="muted-inline">Chargement…</p>
         ) : coursesFiltrees.length === 0 ? (
           <p className="muted-inline">
-            {recherche ? 'Aucune course ne correspond à cette recherche.' : 'Aucune course.'}
+            {recherche ? 'Aucune course ne correspond à cette recherche.' : 'Aucune course pour l’instant. Créez-en une ci-dessus pour une commande reçue au téléphone ; celles de vos partenaires arrivent dans « Entrantes ».'}
           </p>
         ) : (
           <table>

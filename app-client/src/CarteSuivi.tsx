@@ -40,9 +40,16 @@ export function CarteSuivi({ courseId }: { courseId: string }) {
     // Tuiles claires et désaturées : elles laissent le marqueur terracotta
     // ressortir, là où les tuiles OSM standard (routes rouges et jaunes)
     // entreraient en concurrence avec lui.
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+      maxNativeZoom: 16,
       maxZoom: 19,
-      attribution: '&copy; OpenStreetMap, &copy; CARTO',
+      attribution: 'Fond de carte &copy; Esri, HERE, Garmin, &copy; contributeurs OpenStreetMap',
+    }).addTo(carte);
+    // Noms de quartiers et de voies, en couche séparée sur le fond gris.
+    // (CARTO light_all ne sert plus qu'un filigrane « API KEY REQUIRED ».)
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+      maxNativeZoom: 16,
+      maxZoom: 19,
     }).addTo(carte);
 
     carteRef.current = carte;

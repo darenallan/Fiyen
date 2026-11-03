@@ -8,6 +8,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"fiyen-backend/internal/auth"
 	"fiyen-backend/internal/middleware"
@@ -202,6 +203,16 @@ func (d *Deps) RegisterDestinataire(c *fiber.Ctx) error {
 		`INSERT INTO destinataires (nom, telephone_hash) VALUES ($1, $2) RETURNING id`,
 		body.Nom, telephoneHash,
 	).Scan(&destinataireID); err != nil {
+		// 23505 : ce numéro a déjà reçu une livraison commandée par un
+		// partenaire. Rattacher le compte à cet historique sans vérifier que
+		// la personne possède le numéro exposerait ses adresses à quiconque
+		// le tape — il faudra une vérification par SMS. D'ici là, on le dit
+		// plutôt que de renvoyer une erreur interne opaque.
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return fiber.NewError(fiber.StatusConflict,
+				"ce numéro a déjà reçu des livraisons : la création de compte demande une vérification par SMS, pas encore disponible")
+		}
 		return fiber.NewError(fiber.StatusInternalServerError, "création du destinataire échouée")
 	}
 

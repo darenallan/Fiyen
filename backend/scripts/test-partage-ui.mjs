@@ -10,7 +10,7 @@
 // remplacé avant le clic : on ne va pas réellement sur wa.me, WhatsApp Web
 // n'a rien à faire dans un test.
 //
-// Exige l'API sur :8090, app-partenaire sur :5177 et le dashboard sur :5174
+// Exige l'API sur :8090, app-partenaire sur :5177 et le dashboard sur :5173
 // (ou URL_DASHBOARD si le port diffère).
 
 import { spawn } from 'node:child_process';
@@ -20,7 +20,7 @@ import path from 'node:path';
 
 const API = process.env.API_URL || 'http://localhost:8090';
 const PARTENAIRE = process.env.URL_PARTENAIRE || 'http://localhost:5177';
-const DASHBOARD = process.env.URL_DASHBOARD || 'http://localhost:5174';
+const DASHBOARD = process.env.URL_DASHBOARD || 'http://localhost:5173';
 const PORT_CDP = 9338;
 
 let reussis = 0;

@@ -1,7 +1,11 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { api, ApiError, urlMediaPreuve, type Preuve, type Recu } from './api';
 import { IconeAlerte, IconeRetour } from './composants/Icones';
-import { CarteTrajet, type Trajet } from './CarteTrajet';
+import type { Trajet } from './CarteTrajet';
+
+// Chargée à la demande : Leaflet pèse ~45 Ko compressés, inutiles tant
+// qu'aucune carte n'est affichée — sensible sur un réseau mobile lent.
+const CarteTrajet = lazy(() => import('./CarteTrajet').then((m) => ({ default: m.CarteTrajet })));
 
 /**
  * Reçu imprimable d'une commande.
@@ -226,7 +230,11 @@ export function EcranRecu({
           {/* Une carte Leaflet imprime mal (tuiles chargées en canvas) : elle
               reste un confort d'écran, le journal ci-dessus porte déjà les
               horodatages sur le papier. */}
-          {trajet && <CarteTrajet trajet={trajet} />}
+          {trajet && (
+            <Suspense fallback={<p className="attenue">Chargement de la carte…</p>}>
+              <CarteTrajet trajet={trajet} />
+            </Suspense>
+          )}
         </section>
 
         <footer className="recu-pied">

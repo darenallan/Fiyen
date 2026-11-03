@@ -197,8 +197,10 @@ func main() {
 		middleware.RolesRequis(models.RolePartenaire, models.RoleCollaborateur))
 	commandes.Post("/", deps.CreerCoursePartenaire)
 	commandes.Get("/", deps.ListerCoursesPartenaire)
-	// déclaré avant /:id, sinon "carnet" serait capturé comme identifiant
+	// déclarés avant /:id, sinon "carnet" ou "estimation" seraient capturés
+	// comme identifiant
 	commandes.Get("/carnet", deps.CarnetDestinataires)
+	commandes.Get("/estimation", deps.EstimerCommande)
 	commandes.Get("/:id", deps.ObtenirCoursePartenaire)
 	commandes.Get("/:id/recu", deps.RecuCommande)
 	commandes.Post("/:id/lien-partage", deps.GenererLienRecuCommande)
@@ -221,6 +223,13 @@ func main() {
 	dashboardGroup.Get("/commandes-entrantes", deps.CommandesEntrantes)
 	dashboardGroup.Get("/stats", deps.StatsDashboard)
 	dashboardGroup.Get("/config-tarifaire", deps.ObtenirConfigTarifaire)
+	// Barème de livraison de la compagnie (ce que paie le partenaire), à ne
+	// pas confondre avec config-tarifaire (ce que la compagnie paie à Fiyen).
+	dashboardGroup.Get("/bareme", deps.ObtenirBareme)
+	dashboardGroup.Post("/bareme", deps.PublierBareme)
+	dashboardGroup.Post("/bareme/apercu", deps.ApercuBareme)
+	dashboardGroup.Get("/statistiques", deps.Statistiques)
+	dashboardGroup.Get("/statistiques/export", deps.ExporterStatistiques)
 
 	api.Get("/destinataires/recherche", middleware.RolesRequis(models.RoleCompagnie), deps.RechercherDestinataireParTelephone)
 

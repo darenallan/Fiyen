@@ -75,7 +75,7 @@ export function Dashboard() {
     api
       .get<DashboardStats>('/api/dashboard/stats')
       .then(setStats)
-      .catch((err) => setErreur(err instanceof ApiError ? err.message : 'Erreur inconnue'));
+      .catch((err) => setErreur(err instanceof ApiError ? err.message : 'Serveur injoignable. Vérifiez la connexion internet, puis rechargez la page.'));
 
     api
       .get<ConfigTarifaire>('/api/dashboard/config-tarifaire')
@@ -163,7 +163,7 @@ export function Dashboard() {
       </div>
 
       <div className="carte">
-        <h2>Barème tarifaire en vigueur</h2>
+        <h2>Votre abonnement Fiyen</h2>
         {config ? (
           <div className="grille-stats">
             <div className="stat">
@@ -182,7 +182,7 @@ export function Dashboard() {
             </div>
           </div>
         ) : (
-          <p className="muted-inline">Aucun barème configuré pour votre compagnie.</p>
+          <p className="muted-inline">Aucun abonnement configuré pour votre compagnie.</p>
         )}
       </div>
     </div>

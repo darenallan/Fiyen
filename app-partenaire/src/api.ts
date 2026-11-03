@@ -41,9 +41,26 @@ export interface Commande {
   latitude_arrivee?: number;
   longitude_arrivee?: number;
   cree_par_nom?: string;
+  /** Prix figé à la commande d'après le barème de la compagnie. */
+  prix_estime?: number;
+  devise?: string;
+  distance_estimee_m?: number;
   created_at: string;
   updated_at: string;
 }
+
+/** Prix annoncé avant l'envoi. `disponible: false` porte toujours une raison. */
+export interface Estimation {
+  disponible: boolean;
+  prix?: number;
+  devise?: string;
+  distance_km?: number;
+  mode?: 'forfait' | 'paliers' | 'distance';
+  raison?: string;
+}
+
+export const formaterPrix = (prix: number, devise = 'XOF') =>
+  `${prix.toLocaleString('fr-FR')} ${devise === 'XOF' ? 'F CFA' : devise}`;
 
 export interface Destinataire {
   nom: string;
@@ -360,6 +377,18 @@ export const api = {
   commande: (id: string) => requete<Commande>(`/api/commandes/${id}`),
 
   carnet: () => requete<Destinataire[]>('/api/commandes/carnet'),
+
+  estimation: (b: BrouillonCommande) => {
+    const q = new URLSearchParams();
+    const poser = (cle: string, v: number | null | undefined) => {
+      if (v !== null && v !== undefined) q.set(cle, String(v));
+    };
+    poser('lat_depart', b.latitude_depart);
+    poser('lon_depart', b.longitude_depart);
+    poser('lat_arrivee', b.latitude_arrivee);
+    poser('lon_arrivee', b.longitude_arrivee);
+    return requete<Estimation>(`/api/commandes/estimation?${q.toString()}`);
+  },
 
   creerCommande: (brouillon: BrouillonCommande) =>
     requete<Commande>('/api/commandes/', {

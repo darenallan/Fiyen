@@ -1,7 +1,9 @@
-import { useState, type FormEvent } from 'react';
+import { lazy, Suspense, useState, type FormEvent } from 'react';
 import { api, ApiError } from '../api/client';
 import { useFlotteLive } from '../api/useFlotteLive';
-import { CarteFlotte } from '../components/CarteFlotte';
+// Chargée à la demande : Leaflet pèse ~45 Ko compressés, inutiles tant
+// qu'aucune carte n'est affichée — sensible sur un réseau mobile lent.
+const CarteFlotte = lazy(() => import('../components/CarteFlotte').then((m) => ({ default: m.CarteFlotte })));
 
 function libelleStatut(statut: string, enLigne: boolean): string {
   if (!enLigne) return 'Hors ligne';
@@ -63,7 +65,9 @@ export function Livreurs() {
             {enLigne} / {livreurs.length} en ligne
           </span>
         </div>
-        <CarteFlotte livreurs={livreurs} />
+        <Suspense fallback={<p className="muted-inline">Chargement de la carte…</p>}>
+          <CarteFlotte livreurs={livreurs} />
+        </Suspense>
       </div>
 
       <div className="carte" style={{ marginBottom: 24 }}>
@@ -107,7 +111,7 @@ export function Livreurs() {
         {chargement ? (
           <p>Chargement…</p>
         ) : livreurs.length === 0 ? (
-          <p className="muted-inline">Aucun livreur pour le moment.</p>
+          <p className="muted-inline">Aucun livreur pour le moment. Ajoutez le premier ci-dessus : il se connectera à l’application livreur avec ce numéro et ce mot de passe.</p>
         ) : (
           <table>
             <thead>

@@ -138,8 +138,14 @@ export function CommandesEntrantes() {
                   </div>
                 </div>
 
-                {(c.description_colis || c.instructions) && (
+                {(c.description_colis || c.instructions || c.prix_estime !== undefined) && (
                   <dl className="entrante-detail">
+                    {c.prix_estime !== undefined && (
+                      <>
+                        <dt>Prix annoncé</dt>
+                        <dd>{c.prix_estime.toLocaleString('fr-FR')} {c.devise === 'XOF' || !c.devise ? 'F CFA' : c.devise}</dd>
+                      </>
+                    )}
                     {c.description_colis && (
                       <>
                         <dt>Colis</dt>

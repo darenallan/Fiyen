@@ -72,6 +72,9 @@ export interface CommandeEntrante {
   latitude_arrivee?: number;
   longitude_arrivee?: number;
   cree_par_nom?: string;
+  /** Prix figé à la commande d'après le barème (absent sans barème). */
+  prix_estime?: number;
+  devise?: string;
   partenaire_nom: string;
   created_at: string;
   updated_at: string;

@@ -287,7 +287,13 @@ p {
   border-radius: var(--r-pill);
   background: var(--or);
   box-shadow: 0 0 12px 1px var(--or-halo);
-  transition: width 900ms var(--courbe);
+  /* Animée par transform et non par width : width relance la mise en page à
+     chaque image, transform reste sur le compositeur. La barre garde toute la
+     largeur et glisse ; le conteneur (overflow: hidden) masque le reste, et
+     les bouts arrondis ne sont pas déformés comme avec scaleX. */
+  width: 100%;
+  transform: translateX(calc(var(--progression, 0) * 1% - 100%));
+  transition: transform 900ms var(--courbe);
 }
 
 .heros-etape {
@@ -1137,4 +1143,9 @@ button.discret {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Le lien « Leaflet » garde sinon le bleu de la bibliothèque (3,6:1). */
+.leaflet-container .leaflet-control-attribution a {
+  color: var(--tx-clair);
 }

@@ -1039,3 +1039,23 @@ button.bascule.active .bascule-pastille {
 .recu-trajet-entete .surtitre { margin: 0; }
 
 .recu-bloc .carte-trajet { margin-top: 6px; }
+
+/* Prix au récapitulatif : le chiffre en grand, sa provenance en dessous. */
+.recap-prix {
+  margin-top: var(--e-4);
+  padding: var(--e-4);
+  border-radius: var(--r-sm);
+  background: var(--creme-2);
+}
+
+.recap-prix .surtitre {
+  margin: 0;
+}
+
+.recap-prix-montant {
+  margin: var(--e-1) 0;
+  font-family: var(--titre);
+  font-weight: 800;
+  font-size: 28px;
+  color: var(--tx-clair);
+}
