@@ -20,6 +20,7 @@ import (
 	"fiyen-backend/internal/models"
 	"fiyen-backend/internal/notifications"
 	"fiyen-backend/internal/tracking"
+	"fiyen-backend/internal/util"
 )
 
 func main() {
@@ -54,6 +55,12 @@ func main() {
 			if e, ok := err.(*fiber.Error); ok {
 				code = e.Code
 			}
+			// Une erreur interne (pgx, Redis…) peut nommer l'utilisateur, la
+			// base ou une table : elle part dans les logs, jamais au client.
+			if code >= fiber.StatusInternalServerError {
+				log.Printf("erreur %d sur %s %s : %v", code, c.Method(), c.Path(), err)
+				return c.Status(code).JSON(fiber.Map{"erreur": "erreur interne"})
+			}
 			return c.Status(code).JSON(fiber.Map{"erreur": err.Error()})
 		},
 	})
@@ -70,10 +77,14 @@ func main() {
 		AllowMethods: "GET, POST, PATCH, DELETE, OPTIONS",
 	}))
 
+	// Clé des limiteurs : l'adresse réelle du client, même derrière le proxy.
+	cleIP := func(c *fiber.Ctx) string { return util.IPClient(c, cfg.TrustProxy) }
+
 	// --- Auth publique (rate limitée) ---
 	authLimiter := limiter.New(limiter.Config{
-		Max:        10,
-		Expiration: time.Minute,
+		KeyGenerator: cleIP,
+		Max:          10,
+		Expiration:   time.Minute,
 	})
 	authGroup := app.Group("/api/auth", authLimiter)
 	authGroup.Post("/register-compagnie", deps.RegisterCompagnie)
@@ -85,8 +96,9 @@ func main() {
 	// burkinabè fait sortir beaucoup d'abonnés derrière la même IP. Une limite
 	// calquée sur celle du login déconnecterait des utilisateurs légitimes.
 	refreshLimiter := limiter.New(limiter.Config{
-		Max:        60,
-		Expiration: time.Minute,
+		KeyGenerator: cleIP,
+		Max:          60,
+		Expiration:   time.Minute,
 	})
 	app.Post("/api/auth/refresh", refreshLimiter, deps.Refresh)
 	app.Post("/api/auth/deconnexion", refreshLimiter, deps.Deconnexion)
@@ -96,7 +108,7 @@ func main() {
 	// d'où une limite plus serrée que le login — c'est le seul endroit du
 	// système où un secret court est accepté.
 	authGroup.Post("/activer-collaborateur",
-		limiter.New(limiter.Config{Max: 5, Expiration: time.Minute}),
+		limiter.New(limiter.Config{Max: 5, Expiration: time.Minute, KeyGenerator: cleIP}),
 		deps.ActiverCollaborateur,
 	)
 
@@ -115,7 +127,7 @@ func main() {
 	// rattrape parfois plusieurs lots d'affilée au retour du réseau.
 	livreursGroup.Post("/me/positions",
 		middleware.RolesRequis(models.RoleLivreur),
-		limiter.New(limiter.Config{Max: 120, Expiration: time.Minute}),
+		limiter.New(limiter.Config{Max: 120, Expiration: time.Minute, KeyGenerator: cleIP}),
 		deps.DeposerPositions,
 	)
 
@@ -143,7 +155,7 @@ func main() {
 	// celle du login absurde.
 	coursesGroup.Post("/:id/preuve",
 		middleware.RolesRequis(models.RoleLivreur),
-		limiter.New(limiter.Config{Max: 30, Expiration: time.Minute}),
+		limiter.New(limiter.Config{Max: 30, Expiration: time.Minute, KeyGenerator: cleIP}),
 		deps.DeposerPreuve,
 	)
 	coursesGroup.Get("/:id/preuve", deps.LirePreuve)
@@ -242,8 +254,9 @@ func main() {
 
 	// --- Tracking temps réel (WebSocket, rate limitée sur le handshake) ---
 	wsLimiter := limiter.New(limiter.Config{
-		Max:        30,
-		Expiration: time.Minute,
+		KeyGenerator: cleIP,
+		Max:          30,
+		Expiration:   time.Minute,
 	})
 
 	upgradeSeulement := func(c *fiber.Ctx) error {
@@ -300,8 +313,9 @@ func main() {
 	// (256 bits), pas à ce plafond, qui n'est qu'une hygiène de base contre le
 	// bourrinage.
 	lienPartageLimiter := limiter.New(limiter.Config{
-		Max:        60,
-		Expiration: time.Minute,
+		KeyGenerator: cleIP,
+		Max:          60,
+		Expiration:   time.Minute,
 	})
 	app.Get("/r/:jeton", lienPartageLimiter, deps.RecuPartage)
 	app.Get("/r/:jeton/preuve/media", lienPartageLimiter, deps.MediaPreuvePartage)
