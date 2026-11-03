@@ -31,6 +31,10 @@ type Config struct {
 	// handlers.GenererLienRecu) : c'est cette adresse qui doit être jointe
 	// depuis un téléphone quelconque, donc jamais localhost en production.
 	URLPublique string
+	// TrustProxy : X-Forwarded-For est posé par un proxy de confiance
+	// (Render). Sans lui, les limiteurs verraient l'adresse du proxy pour
+	// tous les clients (voir util.IPClient).
+	TrustProxy bool
 }
 
 func Load() *Config {
@@ -41,7 +45,7 @@ func Load() *Config {
 		DatabaseURL:     mustEnv("DATABASE_URL"),
 		RedisAddr:       getEnv("REDIS_ADDR", "localhost:6379"),
 		RedisPassword:   getEnv("REDIS_PASSWORD", ""),
-		JWTSecret:       mustEnv("JWT_SECRET"),
+		JWTSecret:       secretJWT(),
 		JWTDureeMinutes: getEnvInt("JWT_DUREE_MINUTES", 30),
 		// 30 jours : un livreur qui travaille tous les jours ne ressaisit jamais
 		// son mot de passe, et une session oubliée finit quand même par mourir.
@@ -58,6 +62,7 @@ func Load() *Config {
 		// elle qui rend la page HTML du reçu partagé (voir main.go), il n'y a
 		// pas de front séparé à viser.
 		URLPublique: getEnv("URL_PUBLIQUE", "http://localhost:8090"),
+		TrustProxy:  os.Getenv("TRUST_PROXY") == "1",
 	}
 }
 
@@ -66,6 +71,16 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// secretJWT refuse un secret court : un HMAC-SHA256 signé avec quelques
+// caractères se casse hors ligne, et un jeton forgé ouvre n'importe quel compte.
+func secretJWT() string {
+	v := mustEnv("JWT_SECRET")
+	if len(v) < 32 {
+		panic("JWT_SECRET doit faire au moins 32 caractères (openssl rand -base64 48)")
+	}
+	return v
 }
 
 func mustEnv(key string) string {
